@@ -1,8 +1,11 @@
 package com.crpc.core.common.constants;
 
+
 /**
- * @Author linhao
- * @Date created in 9:49 上午 2021/12/4
+ * rpc常量
+ *
+ * @author liuhuaicong
+ * @date 2023/08/09
  */
 public class RpcConstants {
 

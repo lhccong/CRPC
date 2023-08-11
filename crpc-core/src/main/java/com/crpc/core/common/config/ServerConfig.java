@@ -1,8 +1,10 @@
 package com.crpc.core.common.config;
 
 /**
- * @Author linhao
- * @Date created in 10:40 上午 2021/12/11
+ * 服务器配置
+ *
+ * @author liuhuaicong
+ * @date 2023/08/09
  */
 public class ServerConfig {
 

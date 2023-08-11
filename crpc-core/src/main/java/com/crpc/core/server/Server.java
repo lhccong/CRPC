@@ -11,6 +11,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+
 import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_CLASS_MAP;
 
 /**
@@ -20,9 +21,6 @@ import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_CLASS_MAP;
  * @date 2023/08/08
  */
 public class Server {
-    private static EventLoopGroup bossGroup = null;
-
-    private static EventLoopGroup workerGroup = null;
 
     private ServerConfig serverConfig;
 
@@ -35,14 +33,18 @@ public class Server {
     }
 
     public void startApplication() throws InterruptedException {
+        EventLoopGroup workerGroup;
+        EventLoopGroup bossGroup;
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup);
         bootstrap.channel(NioServerSocketChannel.class);
-        bootstrap.option(ChannelOption.TCP_NODELAY, true);
+        bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
         bootstrap.option(ChannelOption.SO_BACKLOG, 1024);
-        bootstrap.option(ChannelOption.SO_SNDBUF, 16 * 1024).option(ChannelOption.SO_RCVBUF, 16 * 1024).option(ChannelOption.SO_KEEPALIVE, true);
+        bootstrap.childOption(ChannelOption.SO_SNDBUF, 16 * 1024)
+                .option(ChannelOption.SO_RCVBUF, 16 * 1024)
+                .childOption(ChannelOption.SO_KEEPALIVE, true);
 
         bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
@@ -56,7 +58,7 @@ public class Server {
         bootstrap.bind(serverConfig.getPort()).sync();
     }
 
-    public void registyService(Object serviceBean) {
+    public void registryService(Object serviceBean) {
         if (serviceBean.getClass().getInterfaces().length == 0) {
             throw new RuntimeException("service must had interfaces!");
         }
@@ -74,7 +76,7 @@ public class Server {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setPort(9090);
         server.setServerConfig(serverConfig);
-        server.registyService(new DataServiceImpl());
+        server.registryService(new DataServiceImpl());
         server.startApplication();
     }
 
