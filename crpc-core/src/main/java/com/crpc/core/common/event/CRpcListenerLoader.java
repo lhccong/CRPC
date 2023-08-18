@@ -1,5 +1,10 @@
 package com.crpc.core.common.event;
 
+import com.crpc.core.common.event.listener.ServiceUpdateListener;
+import com.crpc.core.common.utils.CommonUtils;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -19,4 +24,36 @@ public class CRpcListenerLoader {
     public static void registerListener(CRpcListener cRpcListener){
         cRpcListenerList.add(cRpcListener);
     }
+
+    public void init(){registerListener(new ServiceUpdateListener());}
+
+    /**
+     * 获取接口上的泛型
+     *
+     * @param o 接口
+     * @return {@link Class}<{@link ?}>
+     */
+    public static Class<?> getInterfaceT(Object o){
+        Type[] types = o.getClass().getGenericInterfaces();
+        ParameterizedType parameterizedType = (ParameterizedType) types[0];
+        Type type = parameterizedType.getActualTypeArguments()[0];
+        if (type instanceof Class<?>){
+            return (Class<?>) type;
+        }
+        return null;
+    }
+
+    public static void sendEvent(CRpcEvent cRpcEvent){
+        if (CommonUtils.isEmptyList(cRpcListenerList)){
+            return;
+        }
+        for (CRpcListener<?> cRpcListener : cRpcListenerList) {
+            Class<?> type = getInterfaceT(cRpcListener);
+            assert type != null;
+            if (type.equals(cRpcEvent.getClass())){
+                eventThreadPool.execute(() -> cRpcListener.callBack(cRpcEvent.getData()));
+            }
+        }
+    }
+
 }

@@ -1,10 +1,12 @@
 package com.crpc.core.registry.zookeeper;
 
 import com.crpc.core.common.event.CRpcEvent;
+import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.event.CRpcUpdateEvent;
 import com.crpc.core.common.event.URLChangeWrapper;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
+import com.crpc.interfaces.DataService;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
@@ -58,16 +60,16 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
 
     @Override
     public void subscribe(URL url) {
-        if (!this.zkClient.existNode(ROOT)){
-            zkClient.createPersistentData(ROOT,"");
+        if (!this.zkClient.existNode(ROOT)) {
+            zkClient.createPersistentData(ROOT, "");
         }
         String urlStr = URL.buildConsumerUrlStr(url);
         String consumerPath = getConsumerPath(url);
-        if (!zkClient.existNode(consumerPath)){
-            zkClient.createTemporarySeqData(consumerPath,urlStr);
-        }else {
+        if (!zkClient.existNode(consumerPath)) {
+            zkClient.createTemporarySeqData(consumerPath, urlStr);
+        } else {
             zkClient.deleteNode(consumerPath);
-            zkClient.createTemporarySeqData(consumerPath,urlStr);
+            zkClient.createTemporarySeqData(consumerPath, urlStr);
         }
         super.register(url);
     }
@@ -90,7 +92,8 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
         watchChildNodeData(newServerNodePath);
 
     }
-    public void watchChildNodeData(String newServerNodePath){
+
+    public void watchChildNodeData(String newServerNodePath) {
         zkClient.watchChildNodeData(newServerNodePath, watchedEvent -> {
             System.out.println(watchedEvent);
             String path = watchedEvent.getPath();
@@ -99,12 +102,22 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
             urlChangeWrapper.setProviderUrl(childrenDataList);
             urlChangeWrapper.setServiceName(path.split("/")[2]);
             //自定义的一套事件监听组件
-            CRpcEvent cRpcEvent  = new CRpcUpdateEvent(urlChangeWrapper);
+            CRpcEvent cRpcEvent = new CRpcUpdateEvent(urlChangeWrapper);
+            CRpcListenerLoader.sendEvent(cRpcEvent);
+            //收到回调之后再注册一次监听，这样能保证一直收到消息
+            watchChildNodeData(path);
         });
     }
 
     @Override
     public List<String> getProviderIps(String serviceName) {
         return this.zkClient.getChildrenData(ROOT + "/" + serviceName + "/provider");
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        ZookeeperRegister zookeeperRegister = new ZookeeperRegister("localhost:2181");
+        List<String> urls = zookeeperRegister.getProviderIps(DataService.class.getName());
+        System.out.println(urls);
+        Thread.sleep(2000000);
     }
 }

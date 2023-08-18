@@ -1,31 +1,22 @@
 package com.crpc.core.common.config;
 
 
+import lombok.Data;
+
 /**
  * 客户端配置
  *
  * @author liuhuaicong
  * @date 2023/08/08
  */
+@Data
 public class ClientConfig {
 
-    private Integer port;
+    private String applicationName;
 
-    private String serverAddr;
+    private String registerAddr;
 
-    public String getServerAddr() {
-        return serverAddr;
-    }
+    private String proxyType;
 
-    public void setServerAddr(String serverAddr) {
-        this.serverAddr = serverAddr;
-    }
 
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
 }

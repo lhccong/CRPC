@@ -1,20 +1,21 @@
 package com.crpc.core.common.config;
 
+import lombok.Data;
+
 /**
  * 服务器配置
  *
  * @author liuhuaicong
  * @date 2023/08/09
  */
+@Data
 public class ServerConfig {
 
-    private Integer port;
+    private Integer serverPort;
 
-    public Integer getPort() {
-        return port;
-    }
+    private String registerAddr;
 
-    public void setPort(Integer port) {
-        this.port = port;
-    }
+    private String applicationName;
+
+
 }

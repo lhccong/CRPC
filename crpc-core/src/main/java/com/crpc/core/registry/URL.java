@@ -37,7 +37,9 @@ public class URL {
     private Map<String, String> parameters = new HashMap<>();
 
 
-
+    public void addParameter(String key, String value){
+        this.parameters.putIfAbsent(key,value);
+    }
 
     /**
      * 将URL转换为写入zk的provider节点下的一段字符串
@@ -75,7 +77,5 @@ public class URL {
         return providerNodeInfo;
     }
 
-//    public static void main(String[] args) {
-//        buildUrlFromUrlStr("/irpc/org.idea.irpc.framework.interfaces.DataService/provider/192.168.43.227:9092");
-//    }
+
 }
