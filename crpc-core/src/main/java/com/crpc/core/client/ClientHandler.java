@@ -1,12 +1,13 @@
 package com.crpc.core.client;
 
 import com.alibaba.fastjson.JSON;
-import com.crpc.core.RpcInvocation;
-import com.crpc.core.RpcProtocol;
+import com.crpc.core.common.RpcInvocation;
+import com.crpc.core.common.RpcProtocol;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 
@@ -19,6 +20,7 @@ import static com.crpc.core.common.cache.CommonClientCache.RESP_MAP;
  * @author liuhuaicong
  * @date 2023/08/08
  */
+@Slf4j
 public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
@@ -28,7 +30,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         //这里是传输参数更为详细的RpcInvocation对象字节数组。
         byte[] reqContent = rpcProtocol.getContent();
         String message = new String(reqContent, StandardCharsets.UTF_8);
-        System.out.println("客户端处理器接收到数据："+message);
+        log.info("客户端处理器接收到数据：{}",message);
         String json = new String(reqContent);
         RpcInvocation rpcInvocation = JSON.parseObject(json,RpcInvocation.class);
         //通过之前发送的uuid来注入匹配的响应数值

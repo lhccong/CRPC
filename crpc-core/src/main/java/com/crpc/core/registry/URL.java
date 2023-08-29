@@ -49,7 +49,7 @@ public class URL {
     public static String buildProviderUrlStr(URL url) {
         String host = url.getParameters().get("host");
         String port = url.getParameters().get("port");
-        return new String((url.getApplicationName() + ";" + url.getServiceName() + ";" + host + ":" + port + ";" + System.currentTimeMillis()).getBytes(), StandardCharsets.UTF_8);
+        return new String((url.getApplicationName() + ";" + url.getServiceName() + ";" + host + ":" + port + ";" + System.currentTimeMillis()+";100").getBytes(), StandardCharsets.UTF_8);
     }
 
     /**
@@ -72,10 +72,14 @@ public class URL {
     public static ProviderNodeInfo buildUrlFromUrlStr(String providerNodeStr) {
         String[] items = providerNodeStr.split("/");
         ProviderNodeInfo providerNodeInfo = new ProviderNodeInfo();
-        providerNodeInfo.setServiceName(items[2]);
-        providerNodeInfo.setAddress(items[4]);
+        providerNodeInfo.setServiceName(items[1]);
+        providerNodeInfo.setAddress(items[2]);
+        providerNodeInfo.setRegistryTime(items[3]);
+        providerNodeInfo.setWeight(Integer.valueOf(items[4]));
         return providerNodeInfo;
     }
-
+    public static void main(String[] args) {
+        buildUrlFromUrlStr("/crpc/com.crpc.interfaces.DataService/provider/192.168.43.227:9092");
+    }
 
 }

@@ -1,8 +1,8 @@
 package com.crpc.core.server;
 
 import com.alibaba.fastjson.JSON;
-import com.crpc.core.RpcInvocation;
-import com.crpc.core.RpcProtocol;
+import com.crpc.core.common.RpcInvocation;
+import com.crpc.core.common.RpcProtocol;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

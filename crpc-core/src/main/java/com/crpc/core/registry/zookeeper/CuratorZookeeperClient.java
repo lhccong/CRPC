@@ -1,18 +1,17 @@
 package com.crpc.core.registry.zookeeper;
 
+import com.crpc.core.registry.URL;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Stat;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.apache.zookeeper.Watcher.Event.EventType.NodeDeleted;
 
 /**
  * @author liuhuaicong
@@ -40,14 +39,13 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient {
         //使用 Curator-framework 创建一个指数级退避重试策略的语法。ExponentialBackoffRetry 是 Curator-framework 提供的一种用于处理连接超时和连接异常的重试策略。
         ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(super.getBaseSleepTimes(), super.getMaxRetryTimes());
         if (client == null) {
-            System.setProperty("zookeeper.sasl.client", "false");// 禁用SASL认证
-//            client = CuratorFrameworkFactory.newClient(zkAddress, retryPolicy).;
+//            System.setProperty("zookeeper.sasl.client", "false");// 禁用SASL认证
+//            client = CuratorFrameworkFactory.newClient(zkAddress, retryPolicy);
             // 创建Curator Framework实例
             client= CuratorFrameworkFactory.builder()
                     .connectString(zkAddress) // ZooKeeper服务器地址
+                    .sessionTimeoutMs(30000)
                     .retryPolicy(retryPolicy) // 设置重试策略
-                    .aclProvider(aclProvider) // 设置ACLProvider
-                    .authorization("digest", "cong:123456".getBytes()) // 设置认证凭据（如果需要）
                     .build();
             client.start();
         }
@@ -196,6 +194,20 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient {
             client.getChildren().usingWatcher(watcher).forPath(path);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    public static void main(String[] args) {
+        AbstractZookeeperClient abstractZookeeperClient = new CuratorZookeeperClient("localhost:2181");
+        abstractZookeeperClient.watchNodeData("/crpc/com.crpc.interfaces.DataService/provider/172.21.12.27:9093",
+                watchedEvent -> {
+                    System.out.println(watchedEvent.getType());
+                    if(NodeDeleted.equals(watchedEvent.getType())){
+                        ProviderNodeInfo providerNodeInfo = URL.buildUrlFromUrlStr(watchedEvent.getPath());
+                        System.out.println(providerNodeInfo);
+                    }
+                });
+        while (true){
+
         }
     }
 }

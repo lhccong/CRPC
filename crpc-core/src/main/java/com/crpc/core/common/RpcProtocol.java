@@ -1,4 +1,4 @@
-package com.crpc.core;
+package com.crpc.core.common;
 
 import java.io.Serializable;
 import java.util.Arrays;

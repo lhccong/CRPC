@@ -3,8 +3,7 @@ package com.crpc.core.common.event.listener;
 import com.crpc.core.client.ConnectionHandler;
 import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.event.CRpcEvent;
-import com.crpc.core.common.event.CRpcListener;
-import com.crpc.core.common.event.URLChangeWrapper;
+import com.crpc.core.common.event.data.URLChangeWrapper;
 import com.crpc.core.common.utils.CommonUtils;
 import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
@@ -63,7 +62,8 @@ public class ServiceUpdateListener implements CRpcListener<CRpcEvent> {
                         channelFutureWrapper.setChannelFuture(channelFuture);
                         newChannelFutureWrappers.add(channelFutureWrapper);
                         finalUrl.add(newProviderUrl);
-                    } catch (Exception e) {
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         e.printStackTrace();
                     }
                     finalChannelFutureWrappers.addAll(newChannelFutureWrappers);

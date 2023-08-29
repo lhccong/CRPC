@@ -2,14 +2,16 @@ package com.crpc.core.client;
 
 import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.utils.CommonUtils;
+import com.crpc.core.router.CRouter;
+import com.crpc.core.router.Selector;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static com.crpc.core.common.cache.CommonClientCache.CONNECT_MAP;
-import static com.crpc.core.common.cache.CommonClientCache.SERVER_ADDRESS;
+import static com.crpc.core.common.cache.CommonClientCache.*;
 
 /**
  * 连接处理器
@@ -57,9 +59,14 @@ public class ConnectionHandler {
         channelFutureWrapper.setPort(port);
         SERVER_ADDRESS.add(providerIp);
         List<ChannelFutureWrapper> channelFutureWrappers = CONNECT_MAP.get(providerServiceName);
+        if (CommonUtils.isEmptyList(channelFutureWrappers)) {
+            channelFutureWrappers = new ArrayList<>();
+        }
         channelFutureWrappers.add(channelFutureWrapper);
         CONNECT_MAP.put(providerServiceName, channelFutureWrappers);
-
+        Selector selector = new Selector();
+        selector.setProviderServiceName(providerServiceName);
+        CROUTER.refreshRouteArr(selector);
     }
 
     /**

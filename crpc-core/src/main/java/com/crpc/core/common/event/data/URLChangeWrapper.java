@@ -1,13 +1,15 @@
-package com.crpc.core.common.event;
+package com.crpc.core.common.event.data;
 
 import lombok.Data;
 import lombok.ToString;
 
 import java.util.List;
 
+
 /**
- * @Author linhao
- * @Date created in 8:56 下午 2021/12/19
+ *
+ * @author liuhuaicong
+ * @date 2023/08/29
  */
 @Data
 @ToString

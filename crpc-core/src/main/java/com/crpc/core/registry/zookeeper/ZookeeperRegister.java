@@ -1,14 +1,14 @@
 package com.crpc.core.registry.zookeeper;
 
+import com.alibaba.fastjson.JSON;
 import com.crpc.core.common.event.CRpcEvent;
 import com.crpc.core.common.event.CRpcListenerLoader;
+import com.crpc.core.common.event.CRpcNodeChangeEvent;
 import com.crpc.core.common.event.CRpcUpdateEvent;
-import com.crpc.core.common.event.URLChangeWrapper;
+import com.crpc.core.common.event.data.URLChangeWrapper;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.interfaces.DataService;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 
 import java.util.List;
 
@@ -18,6 +18,7 @@ import java.util.List;
  * @author liuhuaicong
  * @date 2023/08/11
  */
+
 public class ZookeeperRegister extends AbstractRegister implements RegistryService {
 
     private AbstractZookeeperClient zkClient;
@@ -71,7 +72,7 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
             zkClient.deleteNode(consumerPath);
             zkClient.createTemporarySeqData(consumerPath, urlStr);
         }
-        super.register(url);
+        super.subscribe(url);
     }
 
     @Override
@@ -87,15 +88,40 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
 
     @Override
     public void doAfterSubscribe(URL url) {
+        String servicePath = url.getParameters().get("servicePath");
         //监听是否由新的服务注册
-        String newServerNodePath = ROOT + "/" + url.getServiceName() + "/provider";
+        String newServerNodePath = ROOT + "/"  + servicePath;
         watchChildNodeData(newServerNodePath);
+        String providerIpStrJson = url.getParameters().get("providerIps");
+        List<String> providerIpList = JSON.parseObject(providerIpStrJson, List.class);
 
+        for (String providerIp : providerIpList) {
+            this.watchNodeDataChange(ROOT + "/" + servicePath + "/" + providerIp);
+        }
+
+    }
+
+    /**
+     * 订阅服务节点内部的数据变化
+     *
+     * @param newServerNodePath 新服务器节点路径
+     */
+    public void watchNodeDataChange(String newServerNodePath){
+        zkClient.watchNodeData(newServerNodePath, watchedEvent -> {
+            String path = watchedEvent.getPath();
+            String nodeData = zkClient.getNodeData(path);
+            nodeData = nodeData.replace(";", "/");
+            ProviderNodeInfo providerNodeInfo = URL.buildUrlFromUrlStr(nodeData);
+            CRpcEvent cRpcEvent = new CRpcNodeChangeEvent(providerNodeInfo);
+            CRpcListenerLoader.sendEvent(cRpcEvent);
+
+            //收到回调之后在注册一次监听，这样能保证一直都收到消息
+            watchChildNodeData(newServerNodePath);
+        });
     }
 
     public void watchChildNodeData(String newServerNodePath) {
         zkClient.watchChildNodeData(newServerNodePath, watchedEvent -> {
-            System.out.println(watchedEvent);
             String path = watchedEvent.getPath();
             List<String> childrenDataList = zkClient.getChildrenData(path);
             URLChangeWrapper urlChangeWrapper = new URLChangeWrapper();

@@ -1,10 +1,12 @@
 package com.crpc.core.common.cache;
 
 
-import com.crpc.core.RpcInvocation;
+import com.crpc.core.common.RpcInvocation;
+import com.crpc.core.common.ChannelFuturePollingRef;
 import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.config.ClientConfig;
 import com.crpc.core.registry.URL;
+import com.crpc.core.router.CRouter;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -26,7 +28,7 @@ public class CommonClientCache {
     public static Map<String,Object> RESP_MAP = new ConcurrentHashMap<>();
 
     //provider名称 --> 该服务有哪些集群URL
-    public static List<String> SUBSCRIBE_SERVICE_LIST = new ArrayList<>();
+    public static List<URL> SUBSCRIBE_SERVICE_LIST = new ArrayList<>();
 
     public static ClientConfig CLIENT_CONFIG;
 
@@ -36,4 +38,8 @@ public class CommonClientCache {
 
     //每次进行远程调用的时候都是从这里面去选择服务提供者
     public static Map<String, List<ChannelFutureWrapper>> CONNECT_MAP = new ConcurrentHashMap<>();
+    //随机请求的map
+    public static Map<String, ChannelFutureWrapper[]> SERVICE_ROUTER_MAP = new ConcurrentHashMap<>();
+    public static ChannelFuturePollingRef CHANNEL_FUTURE_POLLING_REF = new ChannelFuturePollingRef();
+    public static CRouter CROUTER;
 }

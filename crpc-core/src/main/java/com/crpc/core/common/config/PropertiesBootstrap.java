@@ -4,6 +4,9 @@ import sun.applet.AppletIllegalArgumentException;
 
 import java.io.IOException;
 
+import static com.crpc.core.common.constants.RpcConstants.JDK_PROXY_TYPE;
+import static com.crpc.core.common.constants.RpcConstants.RANDOM_ROUTER_TYPE;
+
 /**
  * 属性配置
  *
@@ -20,6 +23,7 @@ public class PropertiesBootstrap {
     public static final String APPLICATION_NAME = "crpc.applicationName";
 
     public static final String PROXY_TYPE = "crpc.proxyType";
+    public static final String ROUTER_TYPE = "crpc.routerStrategy";
 
     public static ServerConfig loadServerConfigFromLocal(){
         try {
@@ -43,7 +47,8 @@ public class PropertiesBootstrap {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setApplicationName(PropertiesLoader.getPropertiesStr(APPLICATION_NAME));
         clientConfig.setRegisterAddr(PropertiesLoader.getPropertiesStr(REGISTER_ADDRESS));
-        clientConfig.setProxyType(PropertiesLoader.getPropertiesStr(PROXY_TYPE));
+        clientConfig.setProxyType(PropertiesLoader.getPropertiesStrDefault(PROXY_TYPE,JDK_PROXY_TYPE));
+        clientConfig.setRouterStrategy(PropertiesLoader.getPropertiesStrDefault(ROUTER_TYPE,RANDOM_ROUTER_TYPE));
         return clientConfig;
     }
 }

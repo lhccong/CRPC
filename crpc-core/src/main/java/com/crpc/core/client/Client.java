@@ -1,10 +1,10 @@
 package com.crpc.core.client;
 
 import com.alibaba.fastjson.JSON;
-import com.crpc.core.RpcDecoder;
-import com.crpc.core.RpcEncoder;
-import com.crpc.core.RpcInvocation;
-import com.crpc.core.RpcProtocol;
+import com.crpc.core.common.RpcDecoder;
+import com.crpc.core.common.RpcEncoder;
+import com.crpc.core.common.RpcInvocation;
+import com.crpc.core.common.RpcProtocol;
 import com.crpc.core.common.config.ClientConfig;
 import com.crpc.core.common.config.PropertiesBootstrap;
 import com.crpc.core.common.event.CRpcListenerLoader;
@@ -13,6 +13,8 @@ import com.crpc.core.proxy.jdk.JDKProxyFactory;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.AbstractRegister;
 import com.crpc.core.registry.zookeeper.ZookeeperRegister;
+import com.crpc.core.router.impl.RandomRouterImpl;
+import com.crpc.core.router.impl.RotateRouterImpl;
 import com.crpc.interfaces.DataService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -26,8 +28,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
-import static com.crpc.core.common.cache.CommonClientCache.SEND_QUEUE;
-import static com.crpc.core.common.cache.CommonClientCache.SUBSCRIBE_SERVICE_LIST;
+import static com.crpc.core.common.cache.CommonClientCache.*;
+import static com.crpc.core.common.constants.RpcConstants.RANDOM_ROUTER_TYPE;
+import static com.crpc.core.common.constants.RpcConstants.ROTATE_ROUTER_TYPE;
 
 
 /**
@@ -94,19 +97,25 @@ public class Client {
     }
 
 
+    /**
+     * 开始和各个provider建立连接
+     */
+
     public void doConnectServer() {
-        for (String providerServiceName : SUBSCRIBE_SERVICE_LIST) {
-            List<String> providerIps = abstractRegister.getProviderIps(providerServiceName);
+        for (URL providerUrl : SUBSCRIBE_SERVICE_LIST) {
+            //从注册中心获取服务端的地址
+            List<String> providerIps = abstractRegister.getProviderIps(providerUrl.getServiceName());
             for (String providerIp : providerIps) {
                 try {
-                    ConnectionHandler.connect(providerServiceName, providerIp);
+                    ConnectionHandler.connect(providerUrl.getServiceName(), providerIp);
                 } catch (InterruptedException e) {
                     log.error("[doConnectServer] connect fail ", e);
                     Thread.currentThread().interrupt();
                 }
             }
             URL url = new URL();
-            url.setServiceName(providerServiceName);
+            url.addParameter("servicePath",providerUrl.getServiceName() + "/provider");
+            url.addParameter("providerIps",JSON.toJSONString(providerIps));
             abstractRegister.doAfterSubscribe(url);
         }
     }
@@ -150,15 +159,37 @@ public class Client {
         }
     }
 
+    /**
+     * 初始化客户端配置
+     * TODO 后续考虑加入spi
+     */
+    private void initClientConfig(){
+        //初始化路由策略
+        String routerStrategy = clientConfig.getRouterStrategy();
+        if (RANDOM_ROUTER_TYPE.equals(routerStrategy)){
+            CROUTER = new RandomRouterImpl();
+        }else if (ROTATE_ROUTER_TYPE.equals(routerStrategy)){
+            CROUTER = new RotateRouterImpl();
+        }
+    }
     public static void main(String[] args) throws Throwable {
 
         Client client = new Client();
         RpcReference rpcReference = client.initClientApplication();
+        client.initClientConfig();
+        //获取代理对象，设置缓存信息，订阅时调用
         DataService dataService = rpcReference.get(DataService.class);
+        //订阅某个服务，添加本地缓存SUBSCRIBE_SERVICE_LIST
         client.doSubscribeService(DataService.class);
         ConnectionHandler.setBootstrap(client.getBootstrap());
+        //订阅服务，从SUBSCRIBE_SERVICE_LIST中获取需要订阅的服务信息，添加注册中心的监听
+        //根据服务生产者信息，建立连接ChannelFuture,建立的ChannelFuture放入CONNECT_MAP
         client.doConnectServer();
+        //开启异步线程，发送函数请求，通过队列SEND_QUEUE进行通信
         client.startClient();
+        //被代理层invoke方法，增强功能（拦截），将请求放入队列SEND_QUEUE中
+        //异步线程asyncSendJob接收到SEND_QUEUE数据，发起netty调用；在invoke方法中3*1000时间内"死循环获取"RESP_MAP缓存中的响应数据
+        //在ClientHandler中将请求方法，将响应数据放入RESP_MAP中
         String result = dataService.sendData("test");
         log.info(result);
 

@@ -22,5 +22,14 @@ public class ProviderNodeInfo {
      * 服务地址
      */
     private String address;
+    /**
+     * 权重
+     */
+    private Integer weight;
+
+    /**
+     * 注册时间
+     */
+    private String registryTime;
 
 }

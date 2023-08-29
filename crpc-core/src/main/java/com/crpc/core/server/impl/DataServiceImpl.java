@@ -1,6 +1,7 @@
-package com.crpc.core.server;
+package com.crpc.core.server.impl;
 
 import com.crpc.interfaces.DataService;
+import lombok.extern.slf4j.Slf4j;
 
 
 import java.util.ArrayList;
@@ -13,11 +14,11 @@ import java.util.List;
  * @author liuhuaicong
  * @date 2023/08/08
  */
-
+@Slf4j
 public class DataServiceImpl implements DataService {
     @Override
     public String sendData(String body) {
-        System.out.println("己收到的参数长度："+body.length());
+        log.info("己收到的参数长度：{}",body.length());
         return "success";
     }
 

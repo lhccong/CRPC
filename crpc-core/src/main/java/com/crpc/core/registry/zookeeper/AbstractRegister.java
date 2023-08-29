@@ -27,7 +27,7 @@ public  abstract class AbstractRegister implements RegistryService {
 
     @Override
     public void subscribe(URL url) {
-        SUBSCRIBE_SERVICE_LIST.add(url.getServiceName());
+        SUBSCRIBE_SERVICE_LIST.add(url);
     }
 
     @Override

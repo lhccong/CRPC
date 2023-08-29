@@ -52,7 +52,10 @@ public class PropertiesLoader {
         propertiesMap.computeIfAbsent(key, k -> properties.getProperty(k));
         return String.valueOf(propertiesMap.get(key));
     }
-
+    public static String getPropertiesStrDefault(String key, String defaultVal) {
+        String val = getPropertiesStr(key);
+        return val == null || "".equals(val) ? defaultVal : val;
+    }
     /**
      * 根据键值获取配置属性
      *

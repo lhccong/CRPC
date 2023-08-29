@@ -1,8 +1,9 @@
-package com.crpc.core;
+package com.crpc.core.common;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -15,6 +16,7 @@ import static com.crpc.core.common.constants.RpcConstants.MAGIC_NUMBER;
  * @author liuhuaicong
  * @date 2023/08/08
  */
+@Slf4j
 public class RpcDecoder extends ByteToMessageDecoder {
 
     /**
@@ -49,7 +51,7 @@ public class RpcDecoder extends ByteToMessageDecoder {
 
             byteBuf.readBytes(data);
             String message = new String(data, StandardCharsets.UTF_8);
-            System.out.println("rpc解码器接收到数据："+message);
+            log.info("rpc解码器接收到数据{}",message);
             RpcProtocol rpcProtocol = new RpcProtocol(data);
 
             out.add(rpcProtocol);

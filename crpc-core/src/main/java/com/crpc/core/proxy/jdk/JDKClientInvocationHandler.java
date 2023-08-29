@@ -1,7 +1,7 @@
 package com.crpc.core.proxy.jdk;
 
 
-import com.crpc.core.RpcInvocation;
+import com.crpc.core.common.RpcInvocation;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

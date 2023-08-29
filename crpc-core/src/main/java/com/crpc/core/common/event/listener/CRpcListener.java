@@ -1,4 +1,4 @@
-package com.crpc.core.common.event;
+package com.crpc.core.common.event.listener;
 
 /**
  * crpc侦听器

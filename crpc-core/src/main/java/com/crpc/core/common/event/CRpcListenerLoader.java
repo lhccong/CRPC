@@ -1,5 +1,8 @@
 package com.crpc.core.common.event;
 
+import com.crpc.core.common.event.listener.CRpcListener;
+import com.crpc.core.common.event.listener.ProviderNodeDataChangeListener;
+import com.crpc.core.common.event.listener.ServiceDestroyListener;
 import com.crpc.core.common.event.listener.ServiceUpdateListener;
 import com.crpc.core.common.utils.CommonUtils;
 
@@ -21,11 +24,17 @@ public class CRpcListenerLoader {
 
     private static ExecutorService eventThreadPool = Executors.newFixedThreadPool(2);
 
-    public static void registerListener(CRpcListener cRpcListener){
+    public static void registerListener(CRpcListener cRpcListener) {
         cRpcListenerList.add(cRpcListener);
     }
 
-    public void init(){registerListener(new ServiceUpdateListener());}
+    public void init() {
+        registerListener(new ServiceUpdateListener());
+
+        registerListener(new ServiceDestroyListener());
+
+        registerListener(new ProviderNodeDataChangeListener());
+    }
 
     /**
      * 获取接口上的泛型
@@ -33,24 +42,42 @@ public class CRpcListenerLoader {
      * @param o 接口
      * @return {@link Class}<{@link ?}>
      */
-    public static Class<?> getInterfaceT(Object o){
+    public static Class<?> getInterfaceT(Object o) {
         Type[] types = o.getClass().getGenericInterfaces();
         ParameterizedType parameterizedType = (ParameterizedType) types[0];
         Type type = parameterizedType.getActualTypeArguments()[0];
-        if (type instanceof Class<?>){
+        if (type instanceof Class<?>) {
             return (Class<?>) type;
         }
         return null;
     }
 
-    public static void sendEvent(CRpcEvent cRpcEvent){
-        if (CommonUtils.isEmptyList(cRpcListenerList)){
+    /**
+     * 发送同步事件
+     *
+     * @param cRpcEvent c rpc事件
+     */
+    public static void sendSyncEvent(CRpcEvent cRpcEvent){
+        if (CommonUtils.isEmptyList(cRpcListenerList)) {
             return;
         }
         for (CRpcListener<?> cRpcListener : cRpcListenerList) {
             Class<?> type = getInterfaceT(cRpcListener);
             assert type != null;
-            if (type.equals(cRpcEvent.getClass())){
+            if (type.equals(cRpcEvent.getClass())) {
+                cRpcListener.callBack(cRpcEvent.getData());
+            }
+        }
+    }
+
+    public static void sendEvent(CRpcEvent cRpcEvent) {
+        if (CommonUtils.isEmptyList(cRpcListenerList)) {
+            return;
+        }
+        for (CRpcListener<?> cRpcListener : cRpcListenerList) {
+            Class<?> type = getInterfaceT(cRpcListener);
+            assert type != null;
+            if (type.equals(cRpcEvent.getClass())) {
                 eventThreadPool.execute(() -> cRpcListener.callBack(cRpcEvent.getData()));
             }
         }
