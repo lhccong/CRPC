@@ -7,6 +7,7 @@ import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.config.ClientConfig;
 import com.crpc.core.registry.URL;
 import com.crpc.core.router.CRouter;
+import com.crpc.core.serialize.SerializeFactory;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -21,6 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2023/08/09
  */
 public class CommonClientCache {
+    private CommonClientCache() {
+        throw new IllegalStateException("Utility class");
+    }
     //要发送的调用信息
     public static  BlockingQueue<RpcInvocation> SEND_QUEUE = new ArrayBlockingQueue<>(100);
 
@@ -32,7 +36,7 @@ public class CommonClientCache {
 
     public static ClientConfig CLIENT_CONFIG;
 
-    public static Map<String, List<URL>> URL_MAP = new ConcurrentHashMap<>();
+    public static Map<String, Map<String,String>> URL_MAP = new ConcurrentHashMap<>();
 
     public static Set<String> SERVER_ADDRESS = new HashSet<>();
 
@@ -42,4 +46,6 @@ public class CommonClientCache {
     public static Map<String, ChannelFutureWrapper[]> SERVICE_ROUTER_MAP = new ConcurrentHashMap<>();
     public static ChannelFuturePollingRef CHANNEL_FUTURE_POLLING_REF = new ChannelFuturePollingRef();
     public static CRouter CROUTER;
+
+    public static SerializeFactory CLIENT_SERIALIZE_FACTORY;
 }

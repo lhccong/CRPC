@@ -1,6 +1,8 @@
 package com.crpc.core.common.cache;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
+import com.crpc.core.serialize.SerializeFactory;
+
 import java.util.*;
 
 
@@ -20,5 +22,7 @@ public class CommonServerCache {
     public static final Set<URL> PROVIDER_URL_SET = new HashSet<>();
 
     public static RegistryService REGISTRY_SERVICE;
+
+    public static SerializeFactory SERVER_SERIALIZE_FACTORY;
 
 }

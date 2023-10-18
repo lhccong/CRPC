@@ -23,11 +23,22 @@
         <zookeeper.version>3.4.14</zookeeper.version>
         <zkClient.version>0.7</zkClient.version>
         <curator.version>2.12.0</curator.version>
+        <hessian.version>4.0.62</hessian.version>
+        <kryo.version>3.0.3</kryo.version>
     </properties>
 
 
     <dependencies>
-
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo-shaded</artifactId>
+            <version>${kryo.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.caucho</groupId>
+            <artifactId>hessian</artifactId>
+            <version>${hessian.version}</version>
+        </dependency>
         <!--用于在 Java 程序中编辑字节码的库-->
         <dependency>
             <groupId>org.javassist</groupId>

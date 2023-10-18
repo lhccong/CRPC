@@ -4,6 +4,7 @@ import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.crpc.core.common.cache.CommonClientCache.SUBSCRIBE_SERVICE_LIST;
 import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_URL_SET;
@@ -47,6 +48,13 @@ public  abstract class AbstractRegister implements RegistryService {
      * @param url url
      */
     public abstract void doAfterSubscribe(URL url);
+
+    /**
+     * 获取服务的权重信息
+     *
+     * @return <ip:port --> urlString>,<ip:port --> urlString>,<ip:port --> urlString>,<ip:port --> urlString>
+     */
+    public abstract Map<String, String> getServiceWeightMap(String serviceName);
 
     /**
      * 留给子类扩展

@@ -10,7 +10,9 @@ import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.interfaces.DataService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Zookeeper注册类
@@ -138,6 +140,16 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
     @Override
     public List<String> getProviderIps(String serviceName) {
         return this.zkClient.getChildrenData(ROOT + "/" + serviceName + "/provider");
+    }
+    @Override
+    public Map<String, String> getServiceWeightMap(String serviceName) {
+        List<String> nodeDataList = this.zkClient.getChildrenData(ROOT + "/" + serviceName + "/provider");
+        Map<String, String> result = new HashMap<>();
+        for (String ipAndHost : nodeDataList) {
+            String childData = this.zkClient.getNodeData(ROOT + "/" + serviceName + "/provider/" + ipAndHost);
+            result.put(ipAndHost, childData);
+        }
+        return result;
     }
 
     public static void main(String[] args) throws InterruptedException {

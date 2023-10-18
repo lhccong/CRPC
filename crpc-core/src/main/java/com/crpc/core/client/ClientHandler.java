@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.crpc.core.common.cache.CommonClientCache.CLIENT_SERIALIZE_FACTORY;
 import static com.crpc.core.common.cache.CommonClientCache.RESP_MAP;
 
 
@@ -31,8 +32,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         byte[] reqContent = rpcProtocol.getContent();
         String message = new String(reqContent, StandardCharsets.UTF_8);
         log.info("客户端处理器接收到数据：{}",message);
-        String json = new String(reqContent);
-        RpcInvocation rpcInvocation = JSON.parseObject(json,RpcInvocation.class);
+        RpcInvocation rpcInvocation = CLIENT_SERIALIZE_FACTORY.deserialize(reqContent,RpcInvocation.class);
         //通过之前发送的uuid来注入匹配的响应数值
         if(!RESP_MAP.containsKey(rpcInvocation.getUuid())){
             throw new IllegalArgumentException("server response is error!");

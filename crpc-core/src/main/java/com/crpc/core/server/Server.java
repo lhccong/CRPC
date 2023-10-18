@@ -6,9 +6,12 @@ import com.crpc.core.common.config.PropertiesBootstrap;
 import com.crpc.core.common.config.ServerConfig;
 import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.utils.CommonUtils;
-import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.ZookeeperRegister;
+import com.crpc.core.serialize.fastjson.FastJsonSerializeFactory;
+import com.crpc.core.serialize.hessian.HessianSerializeFactory;
+import com.crpc.core.serialize.jdk.JdkSerializeFactory;
+import com.crpc.core.serialize.kryo.KryoSerializeFactory;
 import com.crpc.core.server.impl.DataServiceImpl;
 import com.crpc.core.server.impl.UserServiceImpl;
 import io.netty.bootstrap.ServerBootstrap;
@@ -21,9 +24,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import sun.applet.AppletIllegalArgumentException;
 
-
-import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_CLASS_MAP;
-import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_URL_SET;
+import static com.crpc.core.common.cache.CommonServerCache.*;
+import static com.crpc.core.common.constants.RpcConstants.*;
 
 /**
  * 服务端
@@ -35,8 +37,7 @@ import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_URL_SET;
 public class Server {
 
     private ServerConfig serverConfig;
-    private RegistryService registryService;
-    private CRpcListenerLoader cRpcListenerLoader;
+
     public ServerConfig getServerConfig() {
         return serverConfig;
     }
@@ -83,7 +84,7 @@ public class Server {
                 e.printStackTrace();
             }
             for (URL url : PROVIDER_URL_SET) {
-                registryService.register(url);
+                REGISTRY_SERVICE.register(url);
             }
         });
         task.start();
@@ -92,6 +93,24 @@ public class Server {
     public void initServerConfig() {
         this.serverConfig = PropertiesBootstrap.loadServerConfigFromLocal();
         this.setServerConfig(serverConfig);
+        String serverSerialize = serverConfig.getServerSerialize();
+        switch (serverSerialize) {
+            case JDK_SERIALIZE_TYPE:
+                SERVER_SERIALIZE_FACTORY = new JdkSerializeFactory();
+                break;
+            case FAST_JSON_SERIALIZE_TYPE:
+                SERVER_SERIALIZE_FACTORY = new FastJsonSerializeFactory();
+                break;
+            case HESSIAN2_SERIALIZE_TYPE:
+                SERVER_SERIALIZE_FACTORY = new HessianSerializeFactory();
+                break;
+            case KRYO_SERIALIZE_TYPE:
+                SERVER_SERIALIZE_FACTORY = new KryoSerializeFactory();
+                break;
+            default:
+                throw new RuntimeException("no match serialize type for" + serverSerialize);
+        }
+        System.out.println("serverSerialize is "+serverSerialize);
     }
 
     /**
@@ -107,8 +126,8 @@ public class Server {
         if (classes.length > 1) {
             throw new AppletIllegalArgumentException("service must only had one interfaces!");
         }
-        if (registryService == null) {
-            registryService = new ZookeeperRegister(serverConfig.getRegisterAddr());
+        if (REGISTRY_SERVICE == null) {
+            REGISTRY_SERVICE = new ZookeeperRegister(serverConfig.getRegisterAddr());
         }
         //默认选择该对象的第一个实现接口
         Class interfaceClass = classes[0];
@@ -123,9 +142,10 @@ public class Server {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        CRpcListenerLoader cRpcListenerLoader;
         Server server = new Server();
         server.initServerConfig();
-        CRpcListenerLoader cRpcListenerLoader = new CRpcListenerLoader();
+        cRpcListenerLoader = new CRpcListenerLoader();
         cRpcListenerLoader.init();
         server.exportService(new DataServiceImpl());
         server.exportService(new UserServiceImpl());
