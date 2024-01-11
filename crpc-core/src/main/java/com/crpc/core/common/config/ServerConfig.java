@@ -15,6 +15,8 @@ public class ServerConfig {
 
     private String registerAddr;
 
+    private String registerType;
+
     private String applicationName;
 
     /**

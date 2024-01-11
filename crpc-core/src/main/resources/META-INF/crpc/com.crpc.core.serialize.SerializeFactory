@@ -1,0 +1,4 @@
+kryo=com.crpc.core.serialize.kryo.KryoSerializeFactory
+jdk=com.crpc.core.serialize.jdk.JdkSerializeFactory
+hessian=com.crpc.core.serialize.hessian.HessianSerializeFactory
+fastJson=com.crpc.core.serialize.fastjson.FastJsonSerializeFactory

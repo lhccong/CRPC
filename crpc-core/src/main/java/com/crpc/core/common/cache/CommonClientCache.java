@@ -5,9 +5,12 @@ import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.ChannelFuturePollingRef;
 import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.config.ClientConfig;
+import com.crpc.core.filter.client.ClientFilterChain;
 import com.crpc.core.registry.URL;
+import com.crpc.core.registry.zookeeper.AbstractRegister;
 import com.crpc.core.router.CRouter;
 import com.crpc.core.serialize.SerializeFactory;
+import com.crpc.core.spi.ExtensionLoader;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -48,4 +51,11 @@ public class CommonClientCache {
     public static CRouter CROUTER;
 
     public static SerializeFactory CLIENT_SERIALIZE_FACTORY;
+
+
+    public static ClientFilterChain CLIENT_FILTER_CHAIN ;
+
+    public static AbstractRegister ABSTRACT_REGISTER;
+
+    public static ExtensionLoader EXTENSION_LOADER = new ExtensionLoader();
 }

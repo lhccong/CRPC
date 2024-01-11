@@ -1,0 +1,2 @@
+serverLogFilterImpl=com.crpc.core.filter.server.ServerLogFilterImpl
+serverTokenFilterImpl=com.crpc.core.filter.server.ServerTokenFilterImpl

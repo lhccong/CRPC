@@ -78,6 +78,24 @@ public class URL {
         providerNodeInfo.setWeight(Integer.valueOf(items[4]));
         return providerNodeInfo;
     }
+
+    /**
+     * 将某个节点下的信息转换为一个Provider节点对象
+     *
+     * @param providerNodeStr
+     * @return
+     */
+    public static ProviderNodeInfo buildURLFromUrlStr(String providerNodeStr) {
+        String[] items = providerNodeStr.split(";");
+        ProviderNodeInfo providerNodeInfo = new ProviderNodeInfo();
+        providerNodeInfo.setApplicationName(items[0]);
+        providerNodeInfo.setServiceName(items[1]);
+        providerNodeInfo.setAddress(items[2]);
+        providerNodeInfo.setRegistryTime(items[3]);
+        providerNodeInfo.setWeight(Integer.valueOf(items[4]));
+        providerNodeInfo.setGroup(String.valueOf(items[5]));
+        return providerNodeInfo;
+    }
     public static void main(String[] args) {
         buildUrlFromUrlStr("/crpc/com.crpc.interfaces.DataService/provider/192.168.43.227:9092");
     }

@@ -1,0 +1,2 @@
+jdk=com.crpc.core.proxy.jdk.JDKProxyFactory
+javassist=com.crpc.core.proxy.jdk.JDKProxyFactory

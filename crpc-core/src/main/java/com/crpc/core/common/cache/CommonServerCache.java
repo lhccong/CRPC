@@ -1,10 +1,13 @@
 package com.crpc.core.common.cache;
+import com.crpc.core.common.config.ServerConfig;
+import com.crpc.core.filter.server.ServerFilterChain;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.core.serialize.SerializeFactory;
+import com.crpc.core.server.ServiceWrapper;
 
 import java.util.*;
-
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -22,7 +25,11 @@ public class CommonServerCache {
     public static final Set<URL> PROVIDER_URL_SET = new HashSet<>();
 
     public static RegistryService REGISTRY_SERVICE;
-
+    public static ServerConfig SERVER_CONFIG;
     public static SerializeFactory SERVER_SERIALIZE_FACTORY;
+
+    public static ServerFilterChain SERVER_FILTER_CHAIN;
+
+    public static final Map<String, ServiceWrapper> PROVIDER_SERVICE_WRAPPER_MAP = new ConcurrentHashMap<>();
 
 }

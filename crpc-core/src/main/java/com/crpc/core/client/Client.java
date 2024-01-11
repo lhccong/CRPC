@@ -9,16 +9,14 @@ import com.crpc.core.common.config.ClientConfig;
 import com.crpc.core.common.config.PropertiesBootstrap;
 import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.utils.CommonUtils;
-import com.crpc.core.proxy.jdk.JDKProxyFactory;
+import com.crpc.core.filter.ClientFilter;
+import com.crpc.core.filter.client.ClientFilterChain;
+import com.crpc.core.proxy.ProxyFactory;
+import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.AbstractRegister;
-import com.crpc.core.registry.zookeeper.ZookeeperRegister;
-import com.crpc.core.router.impl.RandomRouterImpl;
-import com.crpc.core.router.impl.RotateRouterImpl;
-import com.crpc.core.serialize.fastjson.FastJsonSerializeFactory;
-import com.crpc.core.serialize.hessian.HessianSerializeFactory;
-import com.crpc.core.serialize.jdk.JdkSerializeFactory;
-import com.crpc.core.serialize.kryo.KryoSerializeFactory;
+import com.crpc.core.router.CRouter;
+import com.crpc.core.serialize.SerializeFactory;
 import com.crpc.interfaces.DataService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -29,13 +27,13 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
-
+import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import static com.crpc.core.common.constants.RpcConstants.*;
+
 import static com.crpc.core.common.cache.CommonClientCache.*;
-import static com.crpc.core.common.constants.RpcConstants.RANDOM_ROUTER_TYPE;
-import static com.crpc.core.common.constants.RpcConstants.ROTATE_ROUTER_TYPE;
+import static com.crpc.core.spi.ExtensionLoader.EXTENSION_LOADER_CLASS_CACHE;
 
 
 /**
@@ -50,10 +48,7 @@ public class Client {
 
     private ClientConfig clientConfig;
 
-    private CRpcListenerLoader cRpcListenerLoader;
     private Bootstrap bootstrap;
-
-    private AbstractRegister abstractRegister;
 
     public ClientConfig getClientConfig() {
         return clientConfig;
@@ -65,7 +60,7 @@ public class Client {
     public Bootstrap getBootstrap() {
         return bootstrap;
     }
-    public RpcReference initClientApplication() {
+    public RpcReference initClientApplication() throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         bootstrap = new Bootstrap();
         bootstrap.group(CLIENT_GROUP);
         bootstrap.channel(NioSocketChannel.class);
@@ -78,10 +73,18 @@ public class Client {
                 ch.pipeline().addLast(new ClientHandler());
             }
         });
-        cRpcListenerLoader = new CRpcListenerLoader();
+        CRpcListenerLoader cRpcListenerLoader = new CRpcListenerLoader();
         cRpcListenerLoader.init();
         this.clientConfig = PropertiesBootstrap.loadClientConfigFromLocal();
-        return new RpcReference(new JDKProxyFactory());
+        CLIENT_CONFIG = this.clientConfig;
+        //spi扩展的加载部分
+        this.initClientConfig();
+        EXTENSION_LOADER.loadExtension(ProxyFactory.class);
+        String proxyType = clientConfig.getProxyType();
+        LinkedHashMap<String, Class> classMap = EXTENSION_LOADER_CLASS_CACHE.get(ProxyFactory.class.getName());
+        Class proxyClassType = classMap.get(proxyType);
+        ProxyFactory proxyFactory = (ProxyFactory) proxyClassType.newInstance();
+        return new RpcReference(proxyFactory);
     }
 
     /**
@@ -90,16 +93,23 @@ public class Client {
      * @param serviceBean 服务bean
      */
     public void doSubscribeService(Class serviceBean) {
-        if (abstractRegister == null) {
-            abstractRegister = new ZookeeperRegister(clientConfig.getRegisterAddr());
+        if (ABSTRACT_REGISTER == null) {
+            try {
+                EXTENSION_LOADER.loadExtension(RegistryService.class);
+                Map<String, Class> registerMap = EXTENSION_LOADER_CLASS_CACHE.get(RegistryService.class.getName());
+                Class registerClass =  registerMap.get(clientConfig.getRegisterType());
+                ABSTRACT_REGISTER = (AbstractRegister) registerClass.newInstance();
+            } catch (Exception e) {
+                log.error("registryServiceType unKnow,error is {}",e.getMessage());
+            }
         }
         URL url = new URL();
         url.setApplicationName(clientConfig.getApplicationName());
         url.setServiceName(serviceBean.getName());
         url.addParameter("host", CommonUtils.getIpAddress());
-        Map<String, String> result = abstractRegister.getServiceWeightMap(serviceBean.getName());
+        Map<String, String> result = ABSTRACT_REGISTER.getServiceWeightMap(serviceBean.getName());
         URL_MAP.put(serviceBean.getName(),result);
-        abstractRegister.subscribe(url);
+        ABSTRACT_REGISTER.subscribe(url);
 
     }
 
@@ -111,7 +121,7 @@ public class Client {
     public void doConnectServer() {
         for (URL providerUrl : SUBSCRIBE_SERVICE_LIST) {
             //从注册中心获取服务端的地址
-            List<String> providerIps = abstractRegister.getProviderIps(providerUrl.getServiceName());
+            List<String> providerIps = ABSTRACT_REGISTER.getProviderIps(providerUrl.getServiceName());
             for (String providerIp : providerIps) {
                 try {
                     ConnectionHandler.connect(providerUrl.getServiceName(), providerIp);
@@ -123,7 +133,7 @@ public class Client {
             URL url = new URL();
             url.addParameter("servicePath",providerUrl.getServiceName() + "/provider");
             url.addParameter("providerIps",JSON.toJSONString(providerIps));
-            abstractRegister.doAfterSubscribe(url);
+            ABSTRACT_REGISTER.doAfterSubscribe(url);
         }
     }
 
@@ -151,12 +161,14 @@ public class Client {
                         break;
                     }
                     //阻塞模式
-                    RpcInvocation data = SEND_QUEUE.take();
+                    RpcInvocation rpcInvocation = SEND_QUEUE.take();
                     //将RpcInvocation封装到RpcProtocol对象中，然后发送给服务端，这里正好对应了上文中的ServerHandler
-                    RpcProtocol rpcProtocol = new RpcProtocol(CLIENT_SERIALIZE_FACTORY.serialize(data));
-                    ChannelFuture channelFuture = ConnectionHandler.getChannelFuture(data.getTargetServiceName());
+                    ChannelFuture channelFuture = ConnectionHandler.getChannelFuture(rpcInvocation);
                     //netty的通道负责发送数据给服务端
-                    channelFuture.channel().writeAndFlush(rpcProtocol);
+                    if (channelFuture != null) {
+                        RpcProtocol rpcProtocol = new RpcProtocol(CLIENT_SERIALIZE_FACTORY.serialize(rpcInvocation));
+                        channelFuture.channel().writeAndFlush(rpcProtocol);
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     Thread.currentThread().interrupt();
@@ -167,46 +179,58 @@ public class Client {
 
     /**
      * 初始化客户端配置
-     * TODO 后续考虑加入spi
+     * 加入spi
      */
-    private void initClientConfig(){
+    private void initClientConfig() throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         //初始化路由策略
+        EXTENSION_LOADER.loadExtension(CRouter.class);
         String routerStrategy = clientConfig.getRouterStrategy();
-        switch (routerStrategy) {
-            case RANDOM_ROUTER_TYPE:
-                CROUTER = new RandomRouterImpl();
-                break;
-            case ROTATE_ROUTER_TYPE:
-                CROUTER = new RotateRouterImpl();
-                break;
-            default:
-                throw new RuntimeException("no match routerStrategy for" + routerStrategy);
+        LinkedHashMap<String, Class> iRouterMap = EXTENSION_LOADER_CLASS_CACHE.get(CRouter.class.getName());
+        Class iRouterClass = iRouterMap.get(routerStrategy);
+        if (iRouterClass == null) {
+            log.error("no match routerStrategy for " + routerStrategy);
+            return;
         }
+        CROUTER = (CRouter) iRouterClass.newInstance();
+
+        //初始化序列化框架
+        EXTENSION_LOADER.loadExtension(SerializeFactory.class);
         String clientSerialize = clientConfig.getClientSerialize();
-        switch (clientSerialize) {
-            case JDK_SERIALIZE_TYPE:
-                CLIENT_SERIALIZE_FACTORY = new JdkSerializeFactory();
-                break;
-            case FAST_JSON_SERIALIZE_TYPE:
-                CLIENT_SERIALIZE_FACTORY = new FastJsonSerializeFactory();
-                break;
-            case HESSIAN2_SERIALIZE_TYPE:
-                CLIENT_SERIALIZE_FACTORY = new HessianSerializeFactory();
-                break;
-            case KRYO_SERIALIZE_TYPE:
-                CLIENT_SERIALIZE_FACTORY = new KryoSerializeFactory();
-                break;
-            default:
-                throw new RuntimeException("no match serialize type for " + clientSerialize);
+        LinkedHashMap<String, Class> serializeMap = EXTENSION_LOADER_CLASS_CACHE.get(SerializeFactory.class.getName());
+        Class serializeFactoryClass = serializeMap.get(clientSerialize);
+        if (serializeFactoryClass == null) {
+            log.error("no match serialize type for null ");
+            return;
         }
+        CLIENT_SERIALIZE_FACTORY = (SerializeFactory) serializeFactoryClass.newInstance();
+
+
+        //初始化过滤链
+        EXTENSION_LOADER.loadExtension(ClientFilter.class);
+        ClientFilterChain clientFilterChain = new ClientFilterChain();
+        LinkedHashMap<String, Class> iClientMap = EXTENSION_LOADER_CLASS_CACHE.get(ClientFilter.class.getName());
+        for (String implClassName : iClientMap.keySet()) {
+            Class iClientFilterClass = iClientMap.get(implClassName);
+            if (iClientFilterClass == null) {
+                log.error("no match iClientFilter for null ");
+                return;
+            }
+            clientFilterChain.addClientFilter((ClientFilter) iClientFilterClass.newInstance());
+        }
+        CLIENT_FILTER_CHAIN = clientFilterChain;
     }
     public static void main(String[] args) throws Throwable {
 
         Client client = new Client();
         RpcReference rpcReference = client.initClientApplication();
         client.initClientConfig();
+        RpcReferenceWrapper<DataService> rpcReferenceWrapper = new RpcReferenceWrapper<>();
+        rpcReferenceWrapper.setAimClass(DataService.class);
+        rpcReferenceWrapper.setGroup("dev");
+        rpcReferenceWrapper.setServiceToken("token-a");
         //获取代理对象，设置缓存信息，订阅时调用
-        DataService dataService = rpcReference.get(DataService.class);
+
+        DataService dataService = rpcReference.get(rpcReferenceWrapper);
         //订阅某个服务，添加本地缓存SUBSCRIBE_SERVICE_LIST
         client.doSubscribeService(DataService.class);
         ConnectionHandler.setBootstrap(client.getBootstrap());

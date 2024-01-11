@@ -2,9 +2,8 @@ package com.crpc.core.common.config;
 
 import com.crpc.core.common.utils.CommonUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -18,11 +17,12 @@ import java.util.Properties;
  */
 public class PropertiesLoader {
 
+    private PropertiesLoader() {
+        throw new IllegalStateException("Utility class");
+    }
     private static Properties properties;
 
-    private static Map<String, String> propertiesMap = new HashMap<>();
-
-    private static String DEFAULT_PROPERTIES_FILE = "G:\\owner-project\\CRPC\\crpc-core\\src\\main\\resources\\crpc.properties";
+    private static final Map<String, String> PROPERTIES_MAP = new HashMap<>();
 
 
     public static void loadConfiguration() throws IOException {
@@ -30,9 +30,9 @@ public class PropertiesLoader {
             return;
         }
         properties = new Properties();
-        try (FileInputStream in = new FileInputStream(DEFAULT_PROPERTIES_FILE)) {
-            properties.load(in);
-        }
+        String defaultPropertiesFile = "crpc.properties";
+        InputStream in = PropertiesLoader.class.getClassLoader().getResourceAsStream(defaultPropertiesFile);
+        properties.load(in);
     }
 
     /**
@@ -49,8 +49,16 @@ public class PropertiesLoader {
             return null;
         }
 
-        propertiesMap.computeIfAbsent(key, k -> properties.getProperty(k));
-        return String.valueOf(propertiesMap.get(key));
+        PROPERTIES_MAP.computeIfAbsent(key, k -> properties.getProperty(k));
+        return String.valueOf(PROPERTIES_MAP.get(key));
+    }
+
+    public static String getPropertiesNotBlank(String key) {
+        String val = getPropertiesStr(key);
+        if (val == null || "".equals(val)) {
+            throw new IllegalArgumentException(key + " 配置为空异常");
+        }
+        return val;
     }
     public static String getPropertiesStrDefault(String key, String defaultVal) {
         String val = getPropertiesStr(key);
@@ -69,7 +77,7 @@ public class PropertiesLoader {
         if (CommonUtils.isEmpty(key)) {
             return null;
         }
-        propertiesMap.computeIfAbsent(key, k -> properties.getProperty(k));
-        return Integer.valueOf(propertiesMap.get(key));
+        PROPERTIES_MAP.computeIfAbsent(key, k -> properties.getProperty(k));
+        return Integer.valueOf(PROPERTIES_MAP.get(key));
     }
 }

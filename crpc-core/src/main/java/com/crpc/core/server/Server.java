@@ -6,12 +6,11 @@ import com.crpc.core.common.config.PropertiesBootstrap;
 import com.crpc.core.common.config.ServerConfig;
 import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.utils.CommonUtils;
+import com.crpc.core.filter.ServerFilter;
+import com.crpc.core.filter.server.ServerFilterChain;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.ZookeeperRegister;
-import com.crpc.core.serialize.fastjson.FastJsonSerializeFactory;
-import com.crpc.core.serialize.hessian.HessianSerializeFactory;
-import com.crpc.core.serialize.jdk.JdkSerializeFactory;
-import com.crpc.core.serialize.kryo.KryoSerializeFactory;
+import com.crpc.core.serialize.SerializeFactory;
 import com.crpc.core.server.impl.DataServiceImpl;
 import com.crpc.core.server.impl.UserServiceImpl;
 import io.netty.bootstrap.ServerBootstrap;
@@ -22,10 +21,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
-import sun.applet.AppletIllegalArgumentException;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+
+import static com.crpc.core.common.cache.CommonClientCache.EXTENSION_LOADER;
 import static com.crpc.core.common.cache.CommonServerCache.*;
-import static com.crpc.core.common.constants.RpcConstants.*;
+import static com.crpc.core.spi.ExtensionLoader.EXTENSION_LOADER_CLASS_CACHE;
 
 /**
  * 服务端
@@ -90,41 +92,51 @@ public class Server {
         task.start();
     }
 
-    public void initServerConfig() {
+    public void initServerConfig() throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         this.serverConfig = PropertiesBootstrap.loadServerConfigFromLocal();
         this.setServerConfig(serverConfig);
+        SERVER_CONFIG = serverConfig;
+        //序列化技术初始化
         String serverSerialize = serverConfig.getServerSerialize();
-        switch (serverSerialize) {
-            case JDK_SERIALIZE_TYPE:
-                SERVER_SERIALIZE_FACTORY = new JdkSerializeFactory();
-                break;
-            case FAST_JSON_SERIALIZE_TYPE:
-                SERVER_SERIALIZE_FACTORY = new FastJsonSerializeFactory();
-                break;
-            case HESSIAN2_SERIALIZE_TYPE:
-                SERVER_SERIALIZE_FACTORY = new HessianSerializeFactory();
-                break;
-            case KRYO_SERIALIZE_TYPE:
-                SERVER_SERIALIZE_FACTORY = new KryoSerializeFactory();
-                break;
-            default:
-                throw new RuntimeException("no match serialize type for" + serverSerialize);
+        EXTENSION_LOADER.loadExtension(SerializeFactory.class);
+        LinkedHashMap<String, Class> serializeFactoryClassMap = EXTENSION_LOADER_CLASS_CACHE.get(SerializeFactory.class.getName());
+        Class serializeFactoryClass = serializeFactoryClassMap.get(serverSerialize);
+        if (serializeFactoryClass == null) {
+            log.error("no match serialize type for " + serverSerialize);
+            return;
         }
-        System.out.println("serverSerialize is "+serverSerialize);
+        SERVER_SERIALIZE_FACTORY = (SerializeFactory) serializeFactoryClass.newInstance();
+
+        //过滤链技术初始化
+        EXTENSION_LOADER.loadExtension(ServerFilter.class);
+        LinkedHashMap<String, Class> iServerFilterClassMap = EXTENSION_LOADER_CLASS_CACHE.get(ServerFilter.class.getName());
+        ServerFilterChain serverFilterChain = new ServerFilterChain();
+        for (String iServerFilterKey : iServerFilterClassMap.keySet()) {
+            Class iServerFilterClass = iServerFilterClassMap.get(iServerFilterKey);
+            if(iServerFilterClass==null){
+                log.error("no match iServerFilter type for{} " ,iServerFilterKey);
+                return;
+            }
+            serverFilterChain.addServerFilter((ServerFilter) iServerFilterClass.newInstance());
+        }
+        SERVER_FILTER_CHAIN = serverFilterChain;
     }
 
     /**
      * 暴露服务信息
      *
-     * @param serviceBean 服务bean
+     * @param serviceWrapper 服务Wrapper
      */
-    public void exportService(Object serviceBean) {
+    public void exportService(ServiceWrapper serviceWrapper) {
+        Object serviceBean = serviceWrapper.getServiceObj();
         if (serviceBean.getClass().getInterfaces().length == 0) {
-            throw new AppletIllegalArgumentException("service must had interfaces!");
+            log.error("service must had interfaces!");
+            return;
         }
         Class[] classes = serviceBean.getClass().getInterfaces();
         if (classes.length > 1) {
-            throw new AppletIllegalArgumentException("service must only had one interfaces!");
+            log.error("service must only had one interfaces!");
+            return;
         }
         if (REGISTRY_SERVICE == null) {
             REGISTRY_SERVICE = new ZookeeperRegister(serverConfig.getRegisterAddr());
@@ -138,17 +150,28 @@ public class Server {
         url.setApplicationName(serverConfig.getApplicationName());
         url.addParameter("host", CommonUtils.getIpAddress());
         url.addParameter("port", String.valueOf(serverConfig.getServerPort()));
+        url.addParameter("group", String.valueOf(serviceWrapper.getGroup()));
+        url.addParameter("limit", String.valueOf(serviceWrapper.getLimit()));
         PROVIDER_URL_SET.add(url);
+        if (!CommonUtils.isEmpty(serviceWrapper.getServiceToken())) {
+            PROVIDER_SERVICE_WRAPPER_MAP.put(interfaceClass.getName(), serviceWrapper);
+        }
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         CRpcListenerLoader cRpcListenerLoader;
         Server server = new Server();
         server.initServerConfig();
         cRpcListenerLoader = new CRpcListenerLoader();
         cRpcListenerLoader.init();
-        server.exportService(new DataServiceImpl());
-        server.exportService(new UserServiceImpl());
+        ServiceWrapper dataServiceServiceWrapper = new ServiceWrapper(new DataServiceImpl(), "dev");
+        dataServiceServiceWrapper.setServiceToken("token-a");
+        dataServiceServiceWrapper.setLimit(2);
+        ServiceWrapper userServiceServiceWrapper = new ServiceWrapper(new UserServiceImpl(), "dev");
+        userServiceServiceWrapper.setServiceToken("token-b");
+        userServiceServiceWrapper.setLimit(2);
+        server.exportService(dataServiceServiceWrapper);
+        server.exportService(userServiceServiceWrapper);
         ApplicationShutdownHook.registryShutdownHook();
         server.startApplication();
     }

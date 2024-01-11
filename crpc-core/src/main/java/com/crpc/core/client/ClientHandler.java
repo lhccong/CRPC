@@ -1,6 +1,5 @@
 package com.crpc.core.client;
 
-import com.alibaba.fastjson.JSON;
 import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.RpcProtocol;
 import io.netty.channel.Channel;

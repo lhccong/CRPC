@@ -12,9 +12,20 @@ import lombok.Data;
 @Data
 public class ClientConfig {
 
+    /**
+     * 应用程序名称
+     */
     private String applicationName;
 
+    /**
+     * 注册地址
+     */
     private String registerAddr;
+
+    /**
+     * 注册类型
+     */
+    private String registerType;
     /**
      * 代理类型 example: jdk,javassist
      */

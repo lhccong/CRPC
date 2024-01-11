@@ -1,9 +1,7 @@
 package com.crpc.core.common.config;
 
-import sun.applet.AppletIllegalArgumentException;
-
+import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
-
 import static com.crpc.core.common.constants.RpcConstants.*;
 
 /**
@@ -12,10 +10,13 @@ import static com.crpc.core.common.constants.RpcConstants.*;
  * @author liuhuaicong
  * @date 2023/08/18
  */
+@Slf4j
 public class PropertiesBootstrap {
     private volatile boolean configIsReady;
     public static final String SERVER_PORT = "crpc.serverPort";
     public static final String REGISTER_ADDRESS = "crpc.registerAddr";
+
+    public static final String REGISTER_TYPE = "crpc.registerType";
     public static final String APPLICATION_NAME = "crpc.applicationName";
     public static final String PROXY_TYPE = "crpc.proxyType";
     public static final String ROUTER_TYPE = "crpc.routerStrategy";
@@ -26,12 +27,13 @@ public class PropertiesBootstrap {
         try {
             PropertiesLoader.loadConfiguration();
         } catch (IOException e) {
-            throw new RuntimeException("loadServerConfigFromLocal fail,e is {}", e);
+            log.error("loadServerConfigFromLocal fail,e is {}", e.getMessage());
         }
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setServerPort(PropertiesLoader.getPropertiesInteger(SERVER_PORT));
         serverConfig.setApplicationName(PropertiesLoader.getPropertiesStr(APPLICATION_NAME));
         serverConfig.setRegisterAddr(PropertiesLoader.getPropertiesStr(REGISTER_ADDRESS));
+        serverConfig.setRegisterType(PropertiesLoader.getPropertiesStr(REGISTER_TYPE));
         serverConfig.setServerSerialize(PropertiesLoader.getPropertiesStrDefault(SERVER_SERIALIZE_TYPE,JDK_SERIALIZE_TYPE));
         return serverConfig;
     }
@@ -40,11 +42,12 @@ public class PropertiesBootstrap {
         try {
             PropertiesLoader.loadConfiguration();
         } catch (IOException e) {
-            throw new RuntimeException("loadClientConfigFromLocal fail,e is {}", e);
+            log.error("loadClientConfigFromLocal fail,e is {}", e.getMessage());
         }
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setApplicationName(PropertiesLoader.getPropertiesStr(APPLICATION_NAME));
-        clientConfig.setRegisterAddr(PropertiesLoader.getPropertiesStr(REGISTER_ADDRESS));
+        clientConfig.setApplicationName(PropertiesLoader.getPropertiesNotBlank(APPLICATION_NAME));
+        clientConfig.setRegisterAddr(PropertiesLoader.getPropertiesNotBlank(REGISTER_ADDRESS));
+        clientConfig.setRegisterType(PropertiesLoader.getPropertiesNotBlank(REGISTER_TYPE));
         clientConfig.setProxyType(PropertiesLoader.getPropertiesStrDefault(PROXY_TYPE,JDK_PROXY_TYPE));
         clientConfig.setRouterStrategy(PropertiesLoader.getPropertiesStrDefault(ROUTER_TYPE,RANDOM_ROUTER_TYPE));
         clientConfig.setClientSerialize(PropertiesLoader.getPropertiesStrDefault(CLIENT_SERIALIZE_TYPE,JDK_SERIALIZE_TYPE));

@@ -1,5 +1,6 @@
 package com.crpc.core.router;
 
+import com.crpc.core.common.ChannelFutureWrapper;
 import lombok.Data;
 
 /**
@@ -16,4 +17,9 @@ public class Selector {
      * eg: com.cong.test.DataService
      */
     private String providerServiceName;
+
+    /**
+     * 经过二次筛选之后的future集合
+     */
+    private ChannelFutureWrapper[] channelFutureWrappers;
 }

@@ -14,6 +14,10 @@ import lombok.ToString;
 @ToString
 public class ProviderNodeInfo {
     /**
+     * 应用程序名称
+     */
+    private String applicationName;
+    /**
      * 服务名称
      */
 
@@ -31,5 +35,10 @@ public class ProviderNodeInfo {
      * 注册时间
      */
     private String registryTime;
+
+    /**
+     * 群
+     */
+    private String group;
 
 }

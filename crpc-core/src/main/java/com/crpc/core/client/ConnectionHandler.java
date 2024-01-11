@@ -1,15 +1,15 @@
 package com.crpc.core.client;
 
 import com.crpc.core.common.ChannelFutureWrapper;
+import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.utils.CommonUtils;
-import com.crpc.core.router.CRouter;
 import com.crpc.core.router.Selector;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import static com.crpc.core.common.cache.CommonClientCache.*;
 
@@ -21,6 +21,10 @@ import static com.crpc.core.common.cache.CommonClientCache.*;
  * @date 2023/08/14
  */
 public class ConnectionHandler {
+
+    private ConnectionHandler() {
+        throw new IllegalStateException("Utility class");
+    }
 
     /**
      * 核心的连接处理器
@@ -98,14 +102,20 @@ public class ConnectionHandler {
     /**
      * 默认走随机策略获取ChannelFuture
      *
-     * @param providerServiceName 提供者服务名称
+     * @param rpcInvocation 提供者服务
      * @return {@link ChannelFuture}
      */
-    public static ChannelFuture getChannelFuture(String providerServiceName) {
-        List<ChannelFutureWrapper> channelFutureWrappers = CONNECT_MAP.get(providerServiceName);
-        if (CommonUtils.isEmptyList(channelFutureWrappers)) {
+    public static ChannelFuture getChannelFuture(RpcInvocation rpcInvocation) {
+        String providerServiceName = rpcInvocation.getTargetServiceName();
+        ChannelFutureWrapper[] channelFutureWrappers = SERVICE_ROUTER_MAP.get(providerServiceName);
+        if (channelFutureWrappers == null || channelFutureWrappers.length == 0) {
             throw new IllegalArgumentException("no provider exist for " + providerServiceName);
         }
-        return channelFutureWrappers.get(new Random().nextInt(channelFutureWrappers.size())).getChannelFuture();
+        CLIENT_FILTER_CHAIN.doFilter(Arrays.asList(channelFutureWrappers),rpcInvocation);
+        CLIENT_FILTER_CHAIN.doFilter(Arrays.asList(channelFutureWrappers),rpcInvocation);
+        Selector selector = new Selector();
+        selector.setProviderServiceName(providerServiceName);
+        selector.setChannelFutureWrappers(channelFutureWrappers);
+        return CROUTER.select(selector).getChannelFuture();
     }
 }

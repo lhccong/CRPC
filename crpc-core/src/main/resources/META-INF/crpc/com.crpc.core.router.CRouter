@@ -1,0 +1,2 @@
+rotate = com.crpc.core.router.impl.RotateRouterImpl
+random = com.crpc.core.router.impl.RandomRouterImpl
