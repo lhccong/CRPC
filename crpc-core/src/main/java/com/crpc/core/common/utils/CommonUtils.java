@@ -1,5 +1,7 @@
 package com.crpc.core.common.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -14,6 +16,7 @@ import java.util.List;
  * @author liuhuaicong
  * @date 2023/08/14
  */
+@Slf4j
 public class CommonUtils {
 
     /**
@@ -55,7 +58,7 @@ public class CommonUtils {
                 }
             }
         } catch (Exception e) {
-            System.err.println("IP地址获取失败" + e);
+            log.error("IP地址获取失败" + e);
         }
         return "";
     }

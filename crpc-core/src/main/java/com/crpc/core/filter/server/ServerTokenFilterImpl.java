@@ -4,6 +4,7 @@ import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.filter.ServerFilter;
 import com.crpc.core.server.ServiceWrapper;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_SERVICE_WRAPPER_MAP;
 
@@ -14,6 +15,7 @@ import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_SERVICE_WRAP
  * @author liuhuaicong
  * @date 2023/10/25
  */
+@Slf4j
 public class ServerTokenFilterImpl implements ServerFilter {
 
     @Override
@@ -27,6 +29,6 @@ public class ServerTokenFilterImpl implements ServerFilter {
         if (!CommonUtils.isEmpty(token) && token.equals(matchToken)) {
             return;
         }
-        throw new RuntimeException("token is " + token + " , verify result is false!");
+        log.error("token is " + token + " , verify result is false!");
     }
 }

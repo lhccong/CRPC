@@ -6,13 +6,19 @@ import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.event.CRpcNodeChangeEvent;
 import com.crpc.core.common.event.CRpcUpdateEvent;
 import com.crpc.core.common.event.data.URLChangeWrapper;
+import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.interfaces.DataService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.crpc.core.common.cache.CommonClientCache.CLIENT_CONFIG;
+import static com.crpc.core.common.cache.CommonServerCache.IS_STARTED;
+import static com.crpc.core.common.cache.CommonServerCache.SERVER_CONFIG;
 
 /**
  * Zookeeper注册类
@@ -20,15 +26,20 @@ import java.util.Map;
  * @author liuhuaicong
  * @date 2023/08/11
  */
+@Slf4j
 
 public class ZookeeperRegister extends AbstractRegister implements RegistryService {
 
-    private AbstractZookeeperClient zkClient;
+    private final AbstractZookeeperClient zkClient;
 
-    private String ROOT = "/crpc";
+    private final String ROOT = "/crpc";
 
     public ZookeeperRegister(String address) {
         this.zkClient = new CuratorZookeeperClient(address);
+    }
+    public ZookeeperRegister() {
+        String registryAddr = CLIENT_CONFIG!= null ? CLIENT_CONFIG.getRegisterAddr() : SERVER_CONFIG.getRegisterAddr();
+        this.zkClient = new CuratorZookeeperClient(registryAddr);
     }
 
     private String getProviderPath(URL url) {
@@ -57,6 +68,9 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
 
     @Override
     public void unRegister(URL url) {
+        if (!IS_STARTED) {
+            return;
+        }
         zkClient.deleteNode(getProviderPath(url));
         super.unRegister(url);
     }
@@ -111,29 +125,42 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
     public void watchNodeDataChange(String newServerNodePath){
         zkClient.watchNodeData(newServerNodePath, watchedEvent -> {
             String path = watchedEvent.getPath();
+            log.info("[watchNodeDataChange] 监听到zk节点下的{}节点数据发生变更",path);
             String nodeData = zkClient.getNodeData(path);
-            nodeData = nodeData.replace(";", "/");
             ProviderNodeInfo providerNodeInfo = URL.buildUrlFromUrlStr(nodeData);
             CRpcEvent cRpcEvent = new CRpcNodeChangeEvent(providerNodeInfo);
             CRpcListenerLoader.sendEvent(cRpcEvent);
 
             //收到回调之后在注册一次监听，这样能保证一直都收到消息
-            watchChildNodeData(newServerNodePath);
+            watchNodeDataChange(newServerNodePath);
         });
     }
 
     public void watchChildNodeData(String newServerNodePath) {
         zkClient.watchChildNodeData(newServerNodePath, watchedEvent -> {
             String path = watchedEvent.getPath();
+            log.info("收到子节点" + path + "数据变化");
             List<String> childrenDataList = zkClient.getChildrenData(path);
+            if (CommonUtils.isEmptyList(childrenDataList)) {
+                watchChildNodeData(path);
+                return;
+            }
             URLChangeWrapper urlChangeWrapper = new URLChangeWrapper();
+            Map<String, String> nodeDetailInfoMap = new HashMap<>();
+            for (String providerAddress : childrenDataList) {
+                String nodeDetailInfo = zkClient.getNodeData(path + "/" + providerAddress);
+                nodeDetailInfoMap.put(providerAddress, nodeDetailInfo);
+            }
+            urlChangeWrapper.setNodeDataUrl(nodeDetailInfoMap);
             urlChangeWrapper.setProviderUrl(childrenDataList);
             urlChangeWrapper.setServiceName(path.split("/")[2]);
-            //自定义的一套事件监听组件
             CRpcEvent cRpcEvent = new CRpcUpdateEvent(urlChangeWrapper);
             CRpcListenerLoader.sendEvent(cRpcEvent);
-            //收到回调之后再注册一次监听，这样能保证一直收到消息
+            //收到回调之后再注册一次监听，这样能保证一直都收到消息
             watchChildNodeData(path);
+            for (String providerAddress : childrenDataList) {
+                watchNodeDataChange(path + "/" + providerAddress);
+            }
         });
     }
 
@@ -152,10 +179,4 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
         return result;
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        ZookeeperRegister zookeeperRegister = new ZookeeperRegister("localhost:2181");
-        List<String> urls = zookeeperRegister.getProviderIps(DataService.class.getName());
-        System.out.println(urls);
-        Thread.sleep(2000000);
-    }
 }

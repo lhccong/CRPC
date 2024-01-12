@@ -8,7 +8,9 @@ import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.filter.ServerFilter;
 import com.crpc.core.filter.server.ServerFilterChain;
+import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
+import com.crpc.core.registry.zookeeper.AbstractRegister;
 import com.crpc.core.registry.zookeeper.ZookeeperRegister;
 import com.crpc.core.serialize.SerializeFactory;
 import com.crpc.core.server.impl.DataServiceImpl;
@@ -24,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static com.crpc.core.common.cache.CommonClientCache.EXTENSION_LOADER;
 import static com.crpc.core.common.cache.CommonServerCache.*;
@@ -139,7 +142,14 @@ public class Server {
             return;
         }
         if (REGISTRY_SERVICE == null) {
-            REGISTRY_SERVICE = new ZookeeperRegister(serverConfig.getRegisterAddr());
+            try {
+                EXTENSION_LOADER.loadExtension(RegistryService.class);
+                Map<String, Class> registryClassMap = EXTENSION_LOADER_CLASS_CACHE.get(RegistryService.class.getName());
+                Class registryClass = registryClassMap.get(serverConfig.getRegisterType());
+                REGISTRY_SERVICE = (AbstractRegister) registryClass.newInstance();
+            } catch (Exception e) {
+                log.error("registryServiceType unKnow,error is ", e);
+            }
         }
         //默认选择该对象的第一个实现接口
         Class interfaceClass = classes[0];

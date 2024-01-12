@@ -7,6 +7,7 @@ import com.crpc.core.common.event.data.URLChangeWrapper;
 import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.ProviderNodeInfo;
+import com.crpc.core.router.Selector;
 import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.crpc.core.common.cache.CommonClientCache.CONNECT_MAP;
+import static com.crpc.core.common.cache.CommonClientCache.CROUTER;
 
 /**
  * 服务更新侦听器
@@ -95,6 +97,9 @@ public class ServiceUpdateListener implements CRpcListener<CRpcEvent> {
 
                     // 更新服务
                     CONNECT_MAP.put(urlChangeWrapper.getServiceName(), finalChannelFutureWrappers);
+                    Selector selector = new Selector();
+                    selector.setProviderServiceName(urlChangeWrapper.getServiceName());
+                    CROUTER.refreshRouteArr(selector);
                 }
             }
         }

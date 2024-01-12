@@ -2,6 +2,7 @@ package com.crpc.core.serialize.jdk;
 
 
 import com.crpc.core.serialize.SerializeFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 
@@ -12,12 +13,13 @@ import java.io.*;
  * @author liuhuaicong
  * @date 2023/10/18
  */
+@Slf4j
 public class JdkSerializeFactory implements SerializeFactory {
 
 
     @Override
     public <T> byte[] serialize(T t) {
-        byte[] data = null;
+        byte[] data;
         try {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             ObjectOutputStream output = new ObjectOutputStream(os);
@@ -26,7 +28,8 @@ public class JdkSerializeFactory implements SerializeFactory {
             output.close();
             data = os.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("序列化失败{}",e.getMessage());
+            return new byte[0];
         }
         return data;
     }
@@ -39,7 +42,8 @@ public class JdkSerializeFactory implements SerializeFactory {
             Object result = input.readObject();
             return ((T) result);
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            log.error("反序列化失败{}",e.getMessage());
+            return null;
         }
     }
 

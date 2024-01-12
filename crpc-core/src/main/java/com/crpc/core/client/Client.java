@@ -140,7 +140,7 @@ public class Client {
     /**
      * 开启发送线程，专门从事将数据包发送给服务端，起到一个解耦的效果
      */
-    private void startClient() {
+    public void startClient() {
         Thread asyncSendJob = new Thread(new AsyncSendJob());
         asyncSendJob.start();
     }

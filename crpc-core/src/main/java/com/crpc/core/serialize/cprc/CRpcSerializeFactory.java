@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class CRpcSerializeFactory implements SerializeFactory {
 
-    class ByteHolder {
+    static class ByteHolder {
         private byte[] bytes;
 
         public ByteHolder(byte[] bytes) {
@@ -110,15 +110,4 @@ public class CRpcSerializeFactory implements SerializeFactory {
         return user;
     }
 
-
-    public static void main(String[] args) {
-        CRpcSerializeFactory serializeFactory = new CRpcSerializeFactory();
-        User user = new User();
-        user.setId(11);
-        user.setTel(12L);
-        byte[] r = serializeFactory.serialize(user);
-        System.out.println(r.length);
-        User user1 = serializeFactory.byteArrayToUser(r);
-        System.out.println(user1);
-    }
 }

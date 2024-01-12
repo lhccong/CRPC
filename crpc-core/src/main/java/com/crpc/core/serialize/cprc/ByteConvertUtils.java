@@ -25,11 +25,10 @@ public class ByteConvertUtils {
      * 把byte转为字符串的bit
      */
     public static String byteToBit(byte b) {
-        return ""
-                + (byte) ((b >> 7) & 0x1) + (byte) ((b >> 6) & 0x1)
+        return String.valueOf((byte) ((b >> 7) & 0x1)) + (byte) ((b >> 6) & 0x1)
                 + (byte) ((b >> 5) & 0x1) + (byte) ((b >> 4) & 0x1)
                 + (byte) ((b >> 3) & 0x1) + (byte) ((b >> 2) & 0x1)
-                + (byte) ((b >> 1) & 0x1) + (byte) ((b >> 0) & 0x1);
+                + (byte) ((b >> 1) & 0x1) + (byte) ((b) & 0x1);
     }
 
 
@@ -54,8 +53,8 @@ public class ByteConvertUtils {
      * 字节数组转换为int数值
      * 十六进制的开头一般都是0x开头
      *
-     * @param bytes
-     * @return
+     * @param bytes 字节
+     * @return int
      */
     public static int byteToInt(byte[] bytes) {
         if (bytes.length != 4) {
@@ -80,7 +79,7 @@ public class ByteConvertUtils {
         return ((long) bytes[0]) & 0xff
                 | (((long) bytes[1]) << 8 & 0xff00)
                 | (((long) bytes[2]) << 16 & 0xff0000)
-                | (((long) bytes[3]) << 24 & 0xff000000)
+                | (((long) bytes[3]) << 24 & 0xff000000L)
                 | (((long) bytes[4]) << 32 & 0xff00000000L)
                 | (((long) bytes[5]) << 40 & 0xff0000000000L)
                 | (((long) bytes[6]) << 48 & 0xff000000000000L)
@@ -90,8 +89,8 @@ public class ByteConvertUtils {
     /**
      * 目前只支持传输英文解析
      *
-     * @param bytes
-     * @return
+     * @param bytes 字节
+     * @return {@link String}
      */
     public static String byteToString(byte[] bytes) {
         if (bytes.length == 0) {
@@ -109,8 +108,8 @@ public class ByteConvertUtils {
     /**
      * 目前只支持英文解析
      *
-     * @param str
-     * @return
+     * @param str str
+     * @return {@link byte[]}
      */
     public static byte[] stringToBytes(String str) {
         if (str == null || str.length() == 0) {
@@ -126,24 +125,23 @@ public class ByteConvertUtils {
     }
 
     /**
+     * 转换为列表
      * 将链表序列化为字符串存入json文件中
      *
-     * @param objList
-     * @return
-     * @throws IOException
+     * @param objList OBJ列表
+     * @return {@link String}
      */
     public static String convertForList(Object objList) {
         return JSON.toJSONString(objList, true);
     }
 
     /**
+     * 从文件转换为列表
      * 将json文件中的内容读取出来，反序列化为链表
      *
-     * @param listString
-     * @param clazz
-     * @param <T>
-     * @return
-     * @throws IOException
+     * @param listString 列表字符串
+     * @param clazz      克拉兹
+     * @return {@link List}<{@link T}>
      */
     public static <T> List<T> convertForListFromFile(String listString, Class<T> clazz) {
         return JSON.parseArray(listString, clazz);

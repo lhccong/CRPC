@@ -20,9 +20,7 @@ public class TestSpiDemo {
 
     public static void main(String[] args) {
         ServiceLoader<ISpiTest> serviceLoader = ServiceLoader.load(ISpiTest.class);
-        Iterator<ISpiTest> iSpiTestIterator = serviceLoader.iterator();
-        while (iSpiTestIterator.hasNext()){
-            ISpiTest iSpiTest = iSpiTestIterator.next();
+        for (ISpiTest iSpiTest : serviceLoader) {
             TestSpiDemo.doTest(iSpiTest);
         }
     }

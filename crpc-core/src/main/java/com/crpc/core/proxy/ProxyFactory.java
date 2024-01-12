@@ -11,5 +11,5 @@ import com.crpc.core.client.RpcReferenceWrapper;
  */
 public interface ProxyFactory {
 
-    <T> T getProxy( RpcReferenceWrapper rpcReferenceWrapper) throws Throwable;
+    <T> T getProxy(RpcReferenceWrapper rpcReferenceWrapper) throws Throwable;
 }

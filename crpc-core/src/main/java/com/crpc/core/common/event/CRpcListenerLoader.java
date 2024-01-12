@@ -20,12 +20,12 @@ import java.util.concurrent.Executors;
  * @date 2023/08/11
  */
 public class CRpcListenerLoader {
-    private static List<CRpcListener> cRpcListenerList = new ArrayList<>();
+    private static final List<CRpcListener> C_RPC_LISTENER_LIST = new ArrayList<>();
 
-    private static ExecutorService eventThreadPool = Executors.newFixedThreadPool(2);
+    private static final ExecutorService EVENT_THREAD_POOL = Executors.newFixedThreadPool(2);
 
     public static void registerListener(CRpcListener cRpcListener) {
-        cRpcListenerList.add(cRpcListener);
+        C_RPC_LISTENER_LIST.add(cRpcListener);
     }
 
     public void init() {
@@ -58,10 +58,10 @@ public class CRpcListenerLoader {
      * @param cRpcEvent c rpc事件
      */
     public static void sendSyncEvent(CRpcEvent cRpcEvent){
-        if (CommonUtils.isEmptyList(cRpcListenerList)) {
+        if (CommonUtils.isEmptyList(C_RPC_LISTENER_LIST)) {
             return;
         }
-        for (CRpcListener<?> cRpcListener : cRpcListenerList) {
+        for (CRpcListener<?> cRpcListener : C_RPC_LISTENER_LIST) {
             Class<?> type = getInterfaceT(cRpcListener);
             assert type != null;
             if (type.equals(cRpcEvent.getClass())) {
@@ -71,14 +71,14 @@ public class CRpcListenerLoader {
     }
 
     public static void sendEvent(CRpcEvent cRpcEvent) {
-        if (CommonUtils.isEmptyList(cRpcListenerList)) {
+        if (CommonUtils.isEmptyList(C_RPC_LISTENER_LIST)) {
             return;
         }
-        for (CRpcListener<?> cRpcListener : cRpcListenerList) {
+        for (CRpcListener<?> cRpcListener : C_RPC_LISTENER_LIST) {
             Class<?> type = getInterfaceT(cRpcListener);
             assert type != null;
             if (type.equals(cRpcEvent.getClass())) {
-                eventThreadPool.execute(() -> cRpcListener.callBack(cRpcEvent.getData()));
+                EVENT_THREAD_POOL.execute(() -> cRpcListener.callBack(cRpcEvent.getData()));
             }
         }
     }

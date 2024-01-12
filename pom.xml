@@ -12,6 +12,7 @@
     <modules>
         <module>crpc-core</module>
         <module>crpc-interface</module>
+        <module>crpc-consumer</module>
     </modules>
 
     <properties>

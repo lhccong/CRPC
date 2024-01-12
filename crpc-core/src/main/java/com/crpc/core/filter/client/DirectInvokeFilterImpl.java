@@ -4,6 +4,7 @@ import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.filter.ClientFilter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
  * @author liuhuaicong
  * @date 2023/10/25
  */
+@Slf4j
 public class DirectInvokeFilterImpl implements ClientFilter {
 
     @Override
@@ -25,7 +27,7 @@ public class DirectInvokeFilterImpl implements ClientFilter {
         }
         src.removeIf(channelFutureWrapper -> !(channelFutureWrapper.getHost() + ":" + channelFutureWrapper.getPort()).equals(url));
         if(CommonUtils.isEmptyList(src)){
-            throw new RuntimeException("no match provider url for "+ url);
+            log.error("no match provider url for "+ url);
         }
     }
 }

@@ -15,7 +15,7 @@ import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_URL_SET;
  * @author liuhuaicong
  * @date 2023/08/10
  */
-public  abstract class AbstractRegister implements RegistryService {
+public abstract class AbstractRegister implements RegistryService {
     @Override
     public void register(URL url) {
         PROVIDER_URL_SET.add(url);
@@ -42,6 +42,7 @@ public  abstract class AbstractRegister implements RegistryService {
      * @param url url
      */
     public abstract void doBeforeSubscribe(URL url);
+
     /**
      * 留给子类扩展
      *

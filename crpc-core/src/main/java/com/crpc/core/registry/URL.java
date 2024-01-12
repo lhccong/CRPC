@@ -82,8 +82,8 @@ public class URL {
     /**
      * 将某个节点下的信息转换为一个Provider节点对象
      *
-     * @param providerNodeStr
-     * @return
+     * @param providerNodeStr 提供者节点 str
+     * @return {@link ProviderNodeInfo}
      */
     public static ProviderNodeInfo buildURLFromUrlStr(String providerNodeStr) {
         String[] items = providerNodeStr.split(";");
@@ -96,8 +96,4 @@ public class URL {
         providerNodeInfo.setGroup(String.valueOf(items[5]));
         return providerNodeInfo;
     }
-    public static void main(String[] args) {
-        buildUrlFromUrlStr("/crpc/com.crpc.interfaces.DataService/provider/192.168.43.227:9092");
-    }
-
 }
