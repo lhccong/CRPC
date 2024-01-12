@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 public class RpcEncoder extends MessageToByteEncoder<RpcProtocol> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, RpcProtocol msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, RpcProtocol msg, ByteBuf out) {
         out.writeShort(msg.getMagicNumber());
         out.writeInt(msg.getContentLength());
         String message = new String(msg.getContent(), StandardCharsets.UTF_8);

@@ -3,6 +3,8 @@ package com.crpc.core.client;
 import com.crpc.core.common.ChannelFutureWrapper;
 import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.utils.CommonUtils;
+import com.crpc.core.registry.URL;
+import com.crpc.core.registry.zookeeper.ProviderNodeInfo;
 import com.crpc.core.router.Selector;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -57,10 +59,15 @@ public class ConnectionHandler {
         int port = Integer.parseInt(providerAddress[1]);
         //到底这个channelFuture里面是什么
         ChannelFuture channelFuture = bootstrap.connect(ip, port).sync();
+        String providerURLInfo = URL_MAP.get(providerServiceName).get(providerIp);
+        ProviderNodeInfo providerNodeInfo = URL.buildURLFromUrlStr(providerURLInfo);
+        //TODO 缺少一个将url进行转换的组件
         ChannelFutureWrapper channelFutureWrapper = new ChannelFutureWrapper();
         channelFutureWrapper.setChannelFuture(channelFuture);
         channelFutureWrapper.setHost(ip);
         channelFutureWrapper.setPort(port);
+        channelFutureWrapper.setWeight(providerNodeInfo.getWeight());
+        channelFutureWrapper.setGroup(providerNodeInfo.getGroup());
         SERVER_ADDRESS.add(providerIp);
         List<ChannelFutureWrapper> channelFutureWrappers = CONNECT_MAP.get(providerServiceName);
         if (CommonUtils.isEmptyList(channelFutureWrappers)) {

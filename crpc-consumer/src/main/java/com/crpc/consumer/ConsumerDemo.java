@@ -6,16 +6,11 @@ import com.crpc.core.client.ConnectionHandler;
 import com.crpc.core.client.RpcReference;
 import com.crpc.core.client.RpcReferenceWrapper;
 import com.crpc.interfaces.DataService;
-import lombok.extern.slf4j.Slf4j;
-
 
 /**
- * 消费者演示
- *
- * @author cong
- * @date 2024/01/12
+ * @Author linhao
+ * @Date created in 4:25 下午 2022/2/4
  */
-@Slf4j
 public class ConsumerDemo {
 
     public static void main(String[] args) throws Throwable {
@@ -33,11 +28,11 @@ public class ConsumerDemo {
         client.startClient();
         for (int i = 0; i < 10000; i++) {
             try {
-                String result = dataService.sendData("test");
+                String result = dataService.sendData("你好啊我是wanwu创造者");
                 System.out.println(result);
                 Thread.sleep(1000);
             } catch (Exception e) {
-               log.error(e.getMessage());
+                e.printStackTrace();
             }
         }
     }

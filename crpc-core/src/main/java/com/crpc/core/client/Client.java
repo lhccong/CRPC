@@ -148,7 +148,7 @@ public class Client {
     /**
      * 异步发送信息任务
      */
-    static class AsyncSendJob implements Runnable {
+     class AsyncSendJob implements Runnable {
 
         Boolean isTarget = false;
 

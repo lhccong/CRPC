@@ -22,6 +22,9 @@ public class ExtensionLoader {
 
     public  static Map<String, LinkedHashMap<String, Class>> EXTENSION_LOADER_CLASS_CACHE = new ConcurrentHashMap<>();
 
+    public static void main(String[] args) throws ClassNotFoundException {
+        System.out.println(Class.forName("com.crpc.core.router.impl.RotateRouterImpl"));
+    }
     public void loadExtension(Class clazz) throws IOException,ClassNotFoundException {
         if (clazz == null) {
             throw new IllegalArgumentException("class is null!");
@@ -43,8 +46,8 @@ public class ExtensionLoader {
                     continue;
                 }
                 String[] lineArr = line.split("=");
-                String implClassName = lineArr[0];
-                String interfaceName = lineArr[1];
+                String implClassName = lineArr[0].trim();
+                String interfaceName = lineArr[1].trim();
                 classMap.put(implClassName, Class.forName(interfaceName));
             }
             //只会触发class文件的加载，而不会触发对象的实例化

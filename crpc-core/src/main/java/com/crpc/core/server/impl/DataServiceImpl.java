@@ -4,6 +4,7 @@ import com.crpc.interfaces.DataService;
 import lombok.extern.slf4j.Slf4j;
 
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,8 @@ public class DataServiceImpl implements DataService {
     @Override
     public String sendData(String body) {
         log.info("己收到的参数长度：{}",body.length());
-        return "success";
+        log.info("己收到的参数：{}",new String(body.getBytes(StandardCharsets.UTF_8)));
+        return "我收到你wanwu的数据啦";
     }
 
     @Override
