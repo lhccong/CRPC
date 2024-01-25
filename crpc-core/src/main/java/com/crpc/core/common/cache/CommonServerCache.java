@@ -1,5 +1,6 @@
 package com.crpc.core.common.cache;
 import com.crpc.core.common.config.ServerConfig;
+import com.crpc.core.dispatcher.ServerChannelDispatcher;
 import com.crpc.core.filter.server.ServerFilterChain;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
@@ -33,4 +34,6 @@ public class CommonServerCache {
     public static final Map<String, ServiceWrapper> PROVIDER_SERVICE_WRAPPER_MAP = new ConcurrentHashMap<>();
 
     public static Boolean IS_STARTED = false;
+
+    public static ServerChannelDispatcher SERVER_CHANNEL_DISPATCHER = new ServerChannelDispatcher();
 }

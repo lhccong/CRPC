@@ -1,53 +1,31 @@
 package com.crpc.core.server;
 
-import com.alibaba.fastjson.JSON;
-import com.crpc.core.common.RpcInvocation;
 import com.crpc.core.common.RpcProtocol;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-import static com.crpc.core.common.cache.CommonServerCache.*;
+import static com.crpc.core.common.cache.CommonServerCache.SERVER_CHANNEL_DISPATCHER;
 
 
 /**
- * 自定义的业务处理器，用于接收处理从客户端发来的RPC请求，并返回相应的结果
+ * 非共享模式，不存在线程安全问题
  *
  * @author liuhuaicong
  * @date 2023/08/08
  */
+@ChannelHandler.Sharable
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws InvocationTargetException, IllegalAccessException {
-        //服务端接收数据的时候统一以RpcProtocol协议的格式接收，具体的发送逻辑见文章下方客户端发送部分
-        RpcProtocol rpcProtocol = (RpcProtocol) msg;
-        RpcInvocation rpcInvocation =SERVER_SERIALIZE_FACTORY.deserialize(rpcProtocol.getContent(),RpcInvocation.class);
-        //执行过滤链路
-        SERVER_FILTER_CHAIN.doFilter(rpcInvocation);
-        //这里的PROVIDER_CLASS_MAP就是一开始预先在启动时候存储的Bean集合
-        Object aimObject = PROVIDER_CLASS_MAP.get(rpcInvocation.getTargetServiceName());
-        Method[] methods = aimObject.getClass().getDeclaredMethods();
-        Object result = null;
-        for (Method method : methods) {
-            if (method.getName().equals(rpcInvocation.getTargetMethod())) {
-                // 通过反射找到目标对象，然后执行目标方法并返回对应值
-                if (method.getReturnType().equals(Void.TYPE)) {
-                    method.invoke(aimObject, rpcInvocation.getArgs());
-                } else {
-                    result = method.invoke(aimObject, rpcInvocation.getArgs());
-                }
-                break;
-            }
-        }
-        rpcInvocation.setResponse(result);
-        RpcProtocol respRpcProtocol = new RpcProtocol(SERVER_SERIALIZE_FACTORY.serialize(rpcInvocation));
-        ctx.writeAndFlush(respRpcProtocol);
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        ServerChannelReadData serverChannelReadData = new ServerChannelReadData();
+        serverChannelReadData.setRpcProtocol((RpcProtocol) msg);
+        serverChannelReadData.setChannelHandlerContext(ctx);
+        //放入channel分发器
+        SERVER_CHANNEL_DISPATCHER.add(serverChannelReadData);
     }
 
     @Override

@@ -24,7 +24,11 @@ public class RpcReferenceWrapper<T> {
     }
 
     public boolean isAsync(){
-        return Boolean.parseBoolean(String.valueOf(attatchments.get("async")));
+        Object r = attatchments.get("async");
+        if (r == null || r.equals(false)) {
+            return false;
+        }
+        return Boolean.TRUE;
     }
 
     public void setAsync(boolean async){
@@ -37,6 +41,14 @@ public class RpcReferenceWrapper<T> {
 
     public void setUrl(String url){
         attatchments.put("url",url);
+    }
+
+    public void setTimeOut(int timeOut) {
+        attatchments.put("timeOut", timeOut);
+    }
+
+    public String getTimeOUt() {
+        return String.valueOf(attatchments.get("timeOut"));
     }
 
     public String getServiceToken(){

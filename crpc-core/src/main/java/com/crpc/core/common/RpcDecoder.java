@@ -32,13 +32,16 @@ public class RpcDecoder extends ByteToMessageDecoder {
                 byteBuf.skipBytes(byteBuf.readableBytes());
             }
             int beginReader;
-
-            beginReader = byteBuf.readerIndex();
-            byteBuf.markReaderIndex();
-            if (byteBuf.readShort() != MAGIC_NUMBER) {
-                // 不是魔数开头，说明是非法的客户端发来的数据包
-                ctx.close();
-                return;
+            while (true) {
+                beginReader = byteBuf.readerIndex();
+                byteBuf.markReaderIndex();
+                if (byteBuf.readShort() == MAGIC_NUMBER) {
+                    break;
+                } else {
+                    // 不是魔数开头，说明是非法的客户端发来的数据包
+                    ctx.close();
+                    return;
+                }
             }
 
             int length = byteBuf.readInt();
@@ -51,7 +54,7 @@ public class RpcDecoder extends ByteToMessageDecoder {
 
             byteBuf.readBytes(data);
             String message = new String(data, StandardCharsets.UTF_8);
-            log.info("rpc解码器接收到数据{}",message);
+            log.info("rpc解码器接收到数据{}", message);
             RpcProtocol rpcProtocol = new RpcProtocol(data);
 
             out.add(rpcProtocol);

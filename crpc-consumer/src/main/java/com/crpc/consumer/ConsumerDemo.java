@@ -20,6 +20,8 @@ public class ConsumerDemo {
         rpcReferenceWrapper.setAimClass(DataService.class);
         rpcReferenceWrapper.setGroup("dev");
         rpcReferenceWrapper.setServiceToken("token-a");
+        rpcReferenceWrapper.setAsync(false);
+        rpcReferenceWrapper.setTimeOut(3000000);
         //在初始化之前必须要设置对应的上下文
         DataService dataService = rpcReference.get(rpcReferenceWrapper);
         client.doSubscribeService(DataService.class);
@@ -29,7 +31,7 @@ public class ConsumerDemo {
         for (int i = 0; i < 10000; i++) {
             try {
                 String result = dataService.sendData("你好啊我是wanwu创造者");
-                System.out.println(result);
+                System.out.println("没想到吧我收到消息啦"+result);
                 Thread.sleep(1000);
             } catch (Exception e) {
                 e.printStackTrace();

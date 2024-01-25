@@ -22,6 +22,9 @@ public class PropertiesBootstrap {
     public static final String ROUTER_TYPE = "crpc.routerStrategy";
     public static final String SERVER_SERIALIZE_TYPE = "crpc.serverSerialize";
     public static final String CLIENT_SERIALIZE_TYPE = "crpc.clientSerialize";
+    public static final String CLIENT_DEFAULT_TIME_OUT = "crpc.client.default.timeout";
+    public static final String SERVER_BIZ_THREAD_NUMS = "crpc.server.biz.thread.nums";
+    public static final String SERVER_QUEUE_SIZE = "crpc.server.queue.size";
 
     public static ServerConfig loadServerConfigFromLocal(){
         try {
@@ -35,6 +38,8 @@ public class PropertiesBootstrap {
         serverConfig.setRegisterAddr(PropertiesLoader.getPropertiesStr(REGISTER_ADDRESS));
         serverConfig.setRegisterType(PropertiesLoader.getPropertiesStr(REGISTER_TYPE));
         serverConfig.setServerSerialize(PropertiesLoader.getPropertiesStrDefault(SERVER_SERIALIZE_TYPE,JDK_SERIALIZE_TYPE));
+        serverConfig.setServerBizThreadNums(PropertiesLoader.getPropertiesIntegerDefault(SERVER_BIZ_THREAD_NUMS,DEFAULT_THREAD_NUMS));
+        serverConfig.setServerQueueSize(PropertiesLoader.getPropertiesIntegerDefault(SERVER_QUEUE_SIZE,DEFAULT_QUEUE_SIZE));
         return serverConfig;
     }
 
@@ -51,6 +56,7 @@ public class PropertiesBootstrap {
         clientConfig.setProxyType(PropertiesLoader.getPropertiesStrDefault(PROXY_TYPE,JDK_PROXY_TYPE));
         clientConfig.setRouterStrategy(PropertiesLoader.getPropertiesStrDefault(ROUTER_TYPE,RANDOM_ROUTER_TYPE));
         clientConfig.setClientSerialize(PropertiesLoader.getPropertiesStrDefault(CLIENT_SERIALIZE_TYPE,JDK_SERIALIZE_TYPE));
+        clientConfig.setTimeOut(PropertiesLoader.getPropertiesIntegerDefault(CLIENT_DEFAULT_TIME_OUT,DEFAULT_TIMEOUT));
         return clientConfig;
     }
 }
