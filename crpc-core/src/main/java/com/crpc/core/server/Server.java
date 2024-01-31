@@ -16,12 +16,15 @@ import com.crpc.core.serialize.SerializeFactory;
 import com.crpc.core.server.impl.DataServiceImpl;
 import com.crpc.core.server.impl.UserServiceImpl;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -30,6 +33,7 @@ import java.util.Map;
 
 import static com.crpc.core.common.cache.CommonClientCache.EXTENSION_LOADER;
 import static com.crpc.core.common.cache.CommonServerCache.*;
+import static com.crpc.core.common.constants.RpcConstants.DEFAULT_DECODE_CHAR;
 import static com.crpc.core.spi.ExtensionLoader.EXTENSION_LOADER_CLASS_CACHE;
 
 /**
@@ -70,6 +74,8 @@ public class Server {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 log.info("初始化provider过程");
+                ByteBuf delimiter = Unpooled.copiedBuffer(DEFAULT_DECODE_CHAR.getBytes());
+                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(serverConfig.getMaxServerRequestData(), delimiter));
                 ch.pipeline().addLast(new RpcEncoder());
                 ch.pipeline().addLast(new RpcDecoder());
                 ch.pipeline().addLast(new ServerHandler());
@@ -80,6 +86,7 @@ public class Server {
         SERVER_CHANNEL_DISPATCHER.startDataConsume();
         bootstrap.bind(serverConfig.getServerPort()).sync();
         IS_STARTED = true;
+        log.info("server服务已启动!");
     }
 
     public void batchExportUrl(){

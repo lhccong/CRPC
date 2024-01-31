@@ -8,8 +8,10 @@ import com.crpc.core.client.RpcReferenceWrapper;
 import com.crpc.interfaces.DataService;
 
 /**
- * @Author linhao
- * @Date created in 4:25 下午 2022/2/4
+ * 消费者演示
+ *
+ * @author cong
+ * @date 2024/01/31
  */
 public class ConsumerDemo {
 
@@ -21,7 +23,9 @@ public class ConsumerDemo {
         rpcReferenceWrapper.setGroup("dev");
         rpcReferenceWrapper.setServiceToken("token-a");
         rpcReferenceWrapper.setAsync(false);
-        rpcReferenceWrapper.setTimeOut(3000000);
+        //失败重试次数
+        rpcReferenceWrapper.setRetry(1);
+        rpcReferenceWrapper.setTimeOut(30000);
         //在初始化之前必须要设置对应的上下文
         DataService dataService = rpcReference.get(rpcReferenceWrapper);
         client.doSubscribeService(DataService.class);

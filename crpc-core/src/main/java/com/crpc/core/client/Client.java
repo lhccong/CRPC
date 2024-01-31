@@ -19,12 +19,15 @@ import com.crpc.core.router.CRouter;
 import com.crpc.core.serialize.SerializeFactory;
 import com.crpc.interfaces.DataService;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -33,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.crpc.core.common.cache.CommonClientCache.*;
+import static com.crpc.core.common.constants.RpcConstants.DEFAULT_DECODE_CHAR;
 import static com.crpc.core.spi.ExtensionLoader.EXTENSION_LOADER_CLASS_CACHE;
 
 
@@ -68,6 +72,8 @@ public class Client {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 //管道中初始化一些逻辑，这里包含了上边所说的编解码器和客户端响应类
+                ByteBuf delimiter = Unpooled.copiedBuffer(DEFAULT_DECODE_CHAR.getBytes());
+                ch.pipeline().addLast(new DelimiterBasedFrameDecoder(clientConfig.getMaxServerRespDataSize(), delimiter));
                 ch.pipeline().addLast(new RpcEncoder());
                 ch.pipeline().addLast(new RpcDecoder());
                 ch.pipeline().addLast(new ClientHandler());

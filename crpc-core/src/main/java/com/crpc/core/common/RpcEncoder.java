@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.crpc.core.common.constants.RpcConstants.DEFAULT_DECODE_CHAR;
+
 
 /**
  * rpc编码器
@@ -24,5 +26,6 @@ public class RpcEncoder extends MessageToByteEncoder<RpcProtocol> {
         String message = new String(msg.getContent(), StandardCharsets.UTF_8);
         log.info("rpc编码器接收到数据：{}",message);
         out.writeBytes(msg.getContent());
+        out.writeBytes(DEFAULT_DECODE_CHAR.getBytes());
     }
 }

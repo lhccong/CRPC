@@ -32,6 +32,15 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         String message = new String(reqContent, StandardCharsets.UTF_8);
         log.info("客户端处理器接收到数据：{}",message);
         RpcInvocation rpcInvocation = CLIENT_SERIALIZE_FACTORY.deserialize(reqContent,RpcInvocation.class);
+        if (rpcInvocation.getE() != null) {
+            rpcInvocation.getE().printStackTrace();
+        }
+        //如果是单纯异步模式的话，响应Map集合中不会存在映射值
+        Object r = rpcInvocation.getAttachments().get("async");
+        if (r != null && Boolean.parseBoolean(String.valueOf(r))) {
+            ReferenceCountUtil.release(msg);
+            return;
+        }
         //通过之前发送的uuid来注入匹配的响应数值
         if(!RESP_MAP.containsKey(rpcInvocation.getUuid())){
             throw new IllegalArgumentException("server response is error!");

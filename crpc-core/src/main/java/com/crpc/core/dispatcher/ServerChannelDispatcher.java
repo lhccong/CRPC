@@ -38,11 +38,10 @@ public class ServerChannelDispatcher {
     class ServerJobCoreHandle implements Runnable {
         @Override
         public void run() {
-            while (true) {
+            while (!Thread.interrupted()) {
                 try {
                     ServerChannelReadData serverChannelReadData = RPC_DATA_QUEUE.take();
                     executorService.submit(() -> {
-                        try {
                             RpcProtocol rpcProtocol = serverChannelReadData.getRpcProtocol();
                             RpcInvocation rpcInvocation = SERVER_SERIALIZE_FACTORY.deserialize(rpcProtocol.getContent(), RpcInvocation.class);
                             //执行过滤链路
@@ -53,9 +52,19 @@ public class ServerChannelDispatcher {
                             for (Method method : methods) {
                                 if (method.getName().equals(rpcInvocation.getTargetMethod())) {
                                     if (method.getReturnType().equals(Void.TYPE)) {
-                                        method.invoke(aimObject, rpcInvocation.getArgs());
+                                        try {
+                                            method.invoke(aimObject, rpcInvocation.getArgs());
+                                        } catch (Exception e) {
+                                            //业务异常
+                                            rpcInvocation.setE(e);
+                                        }
                                     } else {
-                                        result = method.invoke(aimObject, rpcInvocation.getArgs());
+                                        try {
+                                            result = method.invoke(aimObject, rpcInvocation.getArgs());
+                                        } catch (Exception e) {
+                                            //业务异常
+                                            rpcInvocation.setE(e);
+                                        }
                                     }
                                     break;
                                 }
@@ -63,12 +72,9 @@ public class ServerChannelDispatcher {
                             rpcInvocation.setResponse(result);
                             RpcProtocol respRpcProtocol = new RpcProtocol(SERVER_SERIALIZE_FACTORY.serialize(rpcInvocation));
                             serverChannelReadData.getChannelHandlerContext().writeAndFlush(respRpcProtocol);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
                     });
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
                 }
             }
         }
