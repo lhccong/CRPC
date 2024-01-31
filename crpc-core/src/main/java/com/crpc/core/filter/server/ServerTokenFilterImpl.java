@@ -1,6 +1,7 @@
 package com.crpc.core.filter.server;
 
 import com.crpc.core.common.RpcInvocation;
+import com.crpc.core.common.annotations.SPI;
 import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.filter.ServerFilter;
 import com.crpc.core.server.ServiceWrapper;
@@ -16,6 +17,7 @@ import static com.crpc.core.common.cache.CommonServerCache.PROVIDER_SERVICE_WRAP
  * @date 2023/10/25
  */
 @Slf4j
+@SPI("before")
 public class ServerTokenFilterImpl implements ServerFilter {
 
     @Override

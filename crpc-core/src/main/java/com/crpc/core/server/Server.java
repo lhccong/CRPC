@@ -2,16 +2,18 @@ package com.crpc.core.server;
 
 import com.crpc.core.common.RpcDecoder;
 import com.crpc.core.common.RpcEncoder;
+import com.crpc.core.common.ServerServiceSemaphoreWrapper;
+import com.crpc.core.common.annotations.SPI;
 import com.crpc.core.common.config.PropertiesBootstrap;
 import com.crpc.core.common.config.ServerConfig;
 import com.crpc.core.common.event.CRpcListenerLoader;
 import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.filter.ServerFilter;
-import com.crpc.core.filter.server.ServerFilterChain;
+import com.crpc.core.filter.server.ServerAfterFilterChain;
+import com.crpc.core.filter.server.ServerBeforeFilterChain;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.AbstractRegister;
-import com.crpc.core.registry.zookeeper.ZookeeperRegister;
 import com.crpc.core.serialize.SerializeFactory;
 import com.crpc.core.server.impl.DataServiceImpl;
 import com.crpc.core.server.impl.UserServiceImpl;
@@ -69,7 +71,9 @@ public class Server {
         bootstrap.childOption(ChannelOption.SO_SNDBUF, 16 * 1024)
                 .option(ChannelOption.SO_RCVBUF, 16 * 1024)
                 .childOption(ChannelOption.SO_KEEPALIVE, true);
-
+        //服务端采用单一长连接的模式，这里所支持的最大连接数应该和机器本身的性能有关
+        //连接防护的handler应该绑定在Main-Reactor上
+        bootstrap.handler(new MaxConnectionLimitHandler(serverConfig.getMaxConnections()));
         bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
@@ -125,16 +129,23 @@ public class Server {
         //过滤链技术初始化
         EXTENSION_LOADER.loadExtension(ServerFilter.class);
         LinkedHashMap<String, Class> iServerFilterClassMap = EXTENSION_LOADER_CLASS_CACHE.get(ServerFilter.class.getName());
-        ServerFilterChain serverFilterChain = new ServerFilterChain();
+        ServerBeforeFilterChain serverBeforeFilterChain = new ServerBeforeFilterChain();
+        ServerAfterFilterChain serverAfterFilterChain = new ServerAfterFilterChain();
         for (String iServerFilterKey : iServerFilterClassMap.keySet()) {
             Class iServerFilterClass = iServerFilterClassMap.get(iServerFilterKey);
             if(iServerFilterClass==null){
                 log.error("no match iServerFilter type for{} " ,iServerFilterKey);
                 return;
             }
-            serverFilterChain.addServerFilter((ServerFilter) iServerFilterClass.newInstance());
+            SPI spi = (SPI) iServerFilterClass.getDeclaredAnnotation(SPI.class);
+            if (spi != null && "before".equals(spi.value())) {
+                serverBeforeFilterChain.addServerFilter((ServerFilter) iServerFilterClass.newInstance());
+            } else if(spi != null && "after".equals(spi.value())){
+                serverAfterFilterChain.addServerFilter((ServerFilter) iServerFilterClass.newInstance());
+            }
         }
-        SERVER_FILTER_CHAIN = serverFilterChain;
+        SERVER_AFTER_FILTER_CHAIN = serverAfterFilterChain;
+        SERVER_BEFORE_FILTER_CHAIN = serverBeforeFilterChain;
     }
 
     /**
@@ -174,6 +185,8 @@ public class Server {
         url.addParameter("port", String.valueOf(serverConfig.getServerPort()));
         url.addParameter("group", String.valueOf(serviceWrapper.getGroup()));
         url.addParameter("limit", String.valueOf(serviceWrapper.getLimit()));
+        //设置服务端的限流器
+        SERVER_SERVICE_SEMAPHORE_MAP.put(interfaceClass.getName(),new ServerServiceSemaphoreWrapper(serviceWrapper.getLimit()));
         PROVIDER_URL_SET.add(url);
         if (!CommonUtils.isEmpty(serviceWrapper.getServiceToken())) {
             PROVIDER_SERVICE_WRAPPER_MAP.put(interfaceClass.getName(), serviceWrapper);

@@ -1,7 +1,9 @@
 package com.crpc.core.common.cache;
+import com.crpc.core.common.ServerServiceSemaphoreWrapper;
 import com.crpc.core.common.config.ServerConfig;
 import com.crpc.core.dispatcher.ServerChannelDispatcher;
-import com.crpc.core.filter.server.ServerFilterChain;
+import com.crpc.core.filter.server.ServerAfterFilterChain;
+import com.crpc.core.filter.server.ServerBeforeFilterChain;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.core.serialize.SerializeFactory;
@@ -29,11 +31,14 @@ public class CommonServerCache {
     public static ServerConfig SERVER_CONFIG;
     public static SerializeFactory SERVER_SERIALIZE_FACTORY;
 
-    public static ServerFilterChain SERVER_FILTER_CHAIN;
+    public static ServerBeforeFilterChain SERVER_BEFORE_FILTER_CHAIN;
+    public static ServerAfterFilterChain SERVER_AFTER_FILTER_CHAIN;
 
     public static final Map<String, ServiceWrapper> PROVIDER_SERVICE_WRAPPER_MAP = new ConcurrentHashMap<>();
 
     public static Boolean IS_STARTED = false;
 
     public static ServerChannelDispatcher SERVER_CHANNEL_DISPATCHER = new ServerChannelDispatcher();
+
+    public static final Map<String, ServerServiceSemaphoreWrapper> SERVER_SERVICE_SEMAPHORE_MAP = new ConcurrentHashMap<>(64);
 }

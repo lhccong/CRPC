@@ -55,28 +55,29 @@ public class JDKClientInvocationHandler implements InvocationHandler {
         //客户端请求超时的一个判断依据
         while (System.currentTimeMillis() - beginTime < timeOut || rpcInvocation.getRetry() <= retryTimes) {
             Object object = RESP_MAP.get(rpcInvocation.getUuid());
-            if (object instanceof RpcInvocation) {
-                RpcInvocation rpcInvocationResp = (RpcInvocation) object;
-                //正常结果
-                if (rpcInvocationResp.getE() == null) {
+            if (!(object instanceof RpcInvocation)) {
+                continue;
+            }
+            RpcInvocation rpcInvocationResp = (RpcInvocation) object;
+            //正常结果
+            if (rpcInvocationResp.getE() == null) {
+                return rpcInvocationResp.getResponse();
+            } else {
+                //每次重试之后都会将retry值扣减1
+                if (rpcInvocationResp.getRetry() == 0) {
                     return rpcInvocationResp.getResponse();
-                } else  {
-                    //每次重试之后都会将retry值扣减1
-                    if (rpcInvocationResp.getRetry() == 0) {
-                        return rpcInvocationResp.getResponse();
-                    }
-                    //如果是因为超时的情况，才会触发重试规则，否则重试机制不生效
-                    if (System.currentTimeMillis() - beginTime > timeOut) {
-                        retryTimes++;
-                        //重新请求
-                        rpcInvocation.setResponse(null);
-                        rpcInvocation.setRetry(rpcInvocationResp.getRetry() - 1);
-                        RESP_MAP.put(rpcInvocation.getUuid(), OBJECT);
-                        SEND_QUEUE.add(rpcInvocation);
-                    }
+                }
+                //如果是因为超时的情况，才会触发重试规则，否则重试机制不生效
+                if (System.currentTimeMillis() - beginTime > timeOut) {
+                    retryTimes++;
+                    //重新请求
+                    rpcInvocation.setResponse(null);
+                    rpcInvocation.setRetry(rpcInvocationResp.getRetry() - 1);
+                    RESP_MAP.put(rpcInvocation.getUuid(), OBJECT);
+                    SEND_QUEUE.add(rpcInvocation);
                 }
             }
         }
-        throw new TimeoutException("client wait server's response timeout!");
+        throw new TimeoutException("Wait for response from server on client " + timeOut + "ms,retry times is " + retryTimes + ",service's name is " + rpcInvocation.getTargetServiceName() + "#" + rpcInvocation.getTargetMethod());
     }
 }
