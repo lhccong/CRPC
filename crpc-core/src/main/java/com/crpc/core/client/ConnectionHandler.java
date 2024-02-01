@@ -6,6 +6,7 @@ import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.registry.URL;
 import com.crpc.core.registry.zookeeper.ProviderNodeInfo;
 import com.crpc.core.router.Selector;
+import com.esotericsoftware.minlog.Log;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 
@@ -116,10 +117,17 @@ public class ConnectionHandler {
         String providerServiceName = rpcInvocation.getTargetServiceName();
         ChannelFutureWrapper[] channelFutureWrappers = SERVICE_ROUTER_MAP.get(providerServiceName);
         if (channelFutureWrappers == null || channelFutureWrappers.length == 0) {
-            throw new IllegalArgumentException("no provider exist for " + providerServiceName);
+            rpcInvocation.setRetry(0);
+            rpcInvocation.setE(new RuntimeException("no provider exist for " + providerServiceName));
+            rpcInvocation.setResponse(null);
+            //直接交给响应线程那边处理（响应线程在代理类内部的invoke函数中，那边会取出对应的uuid的值，然后判断）
+            RESP_MAP.put(rpcInvocation.getUuid(),rpcInvocation);
+            Log.error("channelFutureWrapper is null");
+            return null;
         }
-        CLIENT_FILTER_CHAIN.doFilter(Arrays.asList(channelFutureWrappers),rpcInvocation);
-        CLIENT_FILTER_CHAIN.doFilter(Arrays.asList(channelFutureWrappers),rpcInvocation);
+        List<ChannelFutureWrapper> channelFutureWrappersList = new ArrayList<>(channelFutureWrappers.length);
+        channelFutureWrappersList.addAll(Arrays.asList(channelFutureWrappers));
+        CLIENT_FILTER_CHAIN.doFilter(channelFutureWrappersList,rpcInvocation);
         Selector selector = new Selector();
         selector.setProviderServiceName(providerServiceName);
         selector.setChannelFutureWrappers(channelFutureWrappers);

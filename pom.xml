@@ -14,6 +14,7 @@
         <module>crpc-interface</module>
         <module>crpc-provider</module>
         <module>crpc-consumer</module>
+        <module>crpc-spring-starter</module>
     </modules>
 
     <properties>

@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.crpc.starter.config.CRpcServerAutoConfiguration,\
+com.crpc.starter.config.CRpcClientAutoConfiguration

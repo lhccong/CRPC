@@ -184,18 +184,4 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args) {
-        AbstractZookeeperClient abstractZookeeperClient = new CuratorZookeeperClient("localhost:2181");
-        abstractZookeeperClient.watchNodeData("/crpc/com.crpc.interfaces.DataService/provider/172.21.12.27:9093",
-                watchedEvent -> {
-                    System.out.println(watchedEvent.getType());
-                    if(NodeDeleted.equals(watchedEvent.getType())){
-                        ProviderNodeInfo providerNodeInfo = URL.buildUrlFromUrlStr(watchedEvent.getPath());
-                        System.out.println(providerNodeInfo);
-                    }
-                });
-        while (true){
-
-        }
-    }
 }

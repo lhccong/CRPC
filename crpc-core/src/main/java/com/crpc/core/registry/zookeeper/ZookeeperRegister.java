@@ -10,6 +10,7 @@ import com.crpc.core.common.utils.CommonUtils;
 import com.crpc.core.registry.RegistryService;
 import com.crpc.core.registry.URL;
 import com.crpc.interfaces.DataService;
+import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.crpc.core.common.cache.CommonClientCache.CLIENT_CONFIG;
+import static com.crpc.core.common.cache.CommonClientCache.CONNECT_MAP;
 import static com.crpc.core.common.cache.CommonServerCache.IS_STARTED;
 import static com.crpc.core.common.cache.CommonServerCache.SERVER_CONFIG;
 
@@ -37,8 +39,9 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
     public ZookeeperRegister(String address) {
         this.zkClient = new CuratorZookeeperClient(address);
     }
+
     public ZookeeperRegister() {
-        String registryAddr = CLIENT_CONFIG!= null ? CLIENT_CONFIG.getRegisterAddr() : SERVER_CONFIG.getRegisterAddr();
+        String registryAddr = CLIENT_CONFIG != null ? CLIENT_CONFIG.getRegisterAddr() : SERVER_CONFIG.getRegisterAddr();
         this.zkClient = new CuratorZookeeperClient(registryAddr);
     }
 
@@ -106,7 +109,7 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
     public void doAfterSubscribe(URL url) {
         String servicePath = url.getParameters().get("servicePath");
         //监听是否由新的服务注册
-        String newServerNodePath = ROOT + "/"  + servicePath;
+        String newServerNodePath = ROOT + "/" + servicePath;
         watchChildNodeData(newServerNodePath);
         String providerIpStrJson = url.getParameters().get("providerIps");
         List<String> providerIpList = JSON.parseObject(providerIpStrJson, List.class);
@@ -122,15 +125,21 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
      *
      * @param newServerNodePath 新服务器节点路径
      */
-    public void watchNodeDataChange(String newServerNodePath){
+    public void watchNodeDataChange(String newServerNodePath) {
         zkClient.watchNodeData(newServerNodePath, watchedEvent -> {
             String path = watchedEvent.getPath();
-            log.info("[watchNodeDataChange] 监听到zk节点下的{}节点数据发生变更",path);
+            log.info("[watchNodeDataChange] 监听到zk节点下的{}节点数据发生变更", path);
             String nodeData = zkClient.getNodeData(path);
-            ProviderNodeInfo providerNodeInfo = URL.buildUrlFromUrlStr(nodeData);
-            CRpcEvent cRpcEvent = new CRpcNodeChangeEvent(providerNodeInfo);
+            ProviderNodeInfo providerNodeInfo;
+            if (StringUtil.isNullOrEmpty(nodeData)) {
+                String[] split = path.split("/");
+                String serviceName = split[split.length - 3];
+                CONNECT_MAP.remove(serviceName);
+                return;
+            }
+            providerNodeInfo = URL.buildURLFromUrlStr(nodeData);
+            CRpcNodeChangeEvent cRpcEvent = new CRpcNodeChangeEvent(providerNodeInfo);
             CRpcListenerLoader.sendEvent(cRpcEvent);
-
             //收到回调之后在注册一次监听，这样能保证一直都收到消息
             watchNodeDataChange(newServerNodePath);
         });
@@ -168,6 +177,7 @@ public class ZookeeperRegister extends AbstractRegister implements RegistryServi
     public List<String> getProviderIps(String serviceName) {
         return this.zkClient.getChildrenData(ROOT + "/" + serviceName + "/provider");
     }
+
     @Override
     public Map<String, String> getServiceWeightMap(String serviceName) {
         List<String> nodeDataList = this.zkClient.getChildrenData(ROOT + "/" + serviceName + "/provider");

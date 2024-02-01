@@ -67,22 +67,6 @@ public class URL {
     /**
      * 将某个节点下的信息转换为一个Provider节点对象
      *
-     * @param providerNodeStr 提供者节点str
-     * @return {@link ProviderNodeInfo}
-     */
-    public static ProviderNodeInfo buildUrlFromUrlStr(String providerNodeStr) {
-        String[] items = providerNodeStr.split("/");
-        ProviderNodeInfo providerNodeInfo = new ProviderNodeInfo();
-        providerNodeInfo.setServiceName(items[1]);
-        providerNodeInfo.setAddress(items[2]);
-        providerNodeInfo.setRegistryTime(items[3]);
-        providerNodeInfo.setWeight(Integer.valueOf(items[4]));
-        return providerNodeInfo;
-    }
-
-    /**
-     * 将某个节点下的信息转换为一个Provider节点对象
-     *
      * @param providerNodeStr 提供者节点 str
      * @return {@link ProviderNodeInfo}
      */
