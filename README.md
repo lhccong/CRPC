@@ -168,7 +168,7 @@ crpc框架
    }
    ```
    
-6. 实现接口，使用自定义注解`@EasyRpcService` 暴露一个服务接口
+6. 实现接口，使用自定义注解`@CRpcService` 暴露一个服务接口
 
    ```java
    @CRpcService
