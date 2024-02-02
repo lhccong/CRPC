@@ -152,6 +152,11 @@ crpc框架
        <artifactId>crpc-spring-starter</artifactId>
        <version>1.0-SNAPSHOT</version>
    </dependency>
+   <dependency>
+       <groupId>com.cong</groupId>
+       <artifactId>crpc-core</artifactId>
+       <version>1.0-SNAPSHOT</version>
+   </dependency>
    ```
 
 5. 定义服务接口
