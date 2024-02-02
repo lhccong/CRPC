@@ -2,11 +2,7 @@
 
 ## 项目介绍🌸
 
-
-
 一款基于`Netty`+`Zookeeper`+`Spring`实现的轻量级`Java RPC`框架。提供服务注册，发现，负载均衡，支持`API`调用，`Spring`集成和`Spring Boot starter`使用。是一个学习`RPC`工作原理的良好示例。
-
-
 
 通过这个简易项目的学习，可以让你从零开始实现一个类似` Dubbo` 服务框架 mini 版`RPC`，学到` RPC` 的底层原理以及各种 `Java` 编码实践的运用。下面看一下`RPC`的调用流程：
 
@@ -22,18 +18,32 @@
 crpc框架
 ├─crpc-core	--rpc核心实现类
 ├─crpc-spring-starter	--组件的spring-starter接入类
-├─rpc-framework-consumer	--[示例]服务消费者
-├─rpc-framework-interface	--存放服务接口
-└─rpc-framework-provider	--[示例]服务提供者
+├─rpc-consumer	--[示例]服务消费者
+├─rpc-interface	--存放服务接口
+└─rpc-provider	--[示例]服务提供者
 ```
 
 ### 核心模块结构
 
 ```
-
+├── cache                          -> 服务端以及客户端缓存
+├── client                         -> 客户端相关类（请求处理、启动加载）
+├── common                         -> 通用模块
+├── config                         -> 项目配置（服务端、客户端属性配置）
+├── constants                      -> 项目常量
+├── dispatcher                     -> 服务端请求解耦
+├── event                          -> 事件监听机制
+├── exception                      -> 全局异常
+├── filter                         -> 责任链模式过滤请求
+├── proxy                          -> 动态代理
+├── registry                       -> 注册中心
+├── router                         -> 路由选择负载均衡
+├── serialize                      -> 序列化与反序列化
+├── server                         -> 服务端相关类（请求处理、启动加载）
+├── service                        -> 测试服务接口
+├── spi                            -> SPI自定义加载类
+└── utils                          -> 项目工具包
 ```
-
-
 
 ### 功能：
 
@@ -42,7 +52,7 @@ crpc框架
 - 基于`Zookeeper`实现分布式服务注册与发现
 - 实现了轮询、随机、加权随机等负载均衡算法
 - 实现了同步调用、异步调用多种调用方式
-- 支持`jdk`、`javassist`的动态代理方式
+- 支持`jdk`的动态代理方式
 - 支持`fastJson`、`hessian`、`kryo`、`jdk`的序列化方式
 - 支持简易扩展点，泛化调用等功能
 - 加入了`Spring Boot Starter`
@@ -93,7 +103,7 @@ crpc框架
 
 3. 运行`Zookeeper
 
-   如果没有安装的过需要先去下载。
+   如果没有安装的过需要先去下载。**（本地使用可参考最后FQA）**
 
 4. 修改配置文件
 
@@ -103,11 +113,11 @@ crpc框架
 
    PS：启动项目前，要确保`zookeeper`已启动.
 
-		<img src="https://shaogezhu-images.oss-cn-beijing.aliyuncs.com/my/run-project.png" style="zoom:80%;" />
+	![image-20240202090654817](https://markdown-piggo.oss-cn-guangzhou.aliyuncs.com/img/image-20240202090654817.png)
 
 6. 打开浏览器测试
 
-   在浏览器中输入`http://localhost:8081/user/test`或者`http://localhost:8081/user/list`，然后查看项目的输出日志。
+   在浏览器中输入`http://localhost:8019/user/test`或者`http://localhost:8019/user/list`，然后查看项目的输出日志。
 
 
 
@@ -116,7 +126,7 @@ crpc框架
 1. 下载源码
 
    ```shell
-   git clone git@github.com:shaogezhu/crpc.git
+   git clone https://github.com/lhccong/CRPC.git
    ```
 
 2. 编译安装 jar 包到本地仓库（注意如果是服务器上面，需要上传到私服仓库）
@@ -129,7 +139,7 @@ crpc框架
 
    在本地新建两个工程，用于模拟客户端和服务端。
 
-	![](https://shaogezhu-images.oss-cn-beijing.aliyuncs.com/my/example.png)
+	![image-20240202090913855](https://markdown-piggo.oss-cn-guangzhou.aliyuncs.com/img/image-20240202090913855.png)
 
 
 
@@ -138,7 +148,7 @@ crpc框架
    在项目中的`pom`引入刚刚安装的依赖（客户端、服务端都需要引入）
    ```xml
    <dependency>
-       <groupId>com.shaogezhu</groupId>
+    	<groupId>com.cong</groupId>
        <artifactId>crpc-spring-starter</artifactId>
        <version>1.0-SNAPSHOT</version>
    </dependency>
@@ -147,11 +157,6 @@ crpc框架
 5. 定义服务接口
 
    ```java
-   /**
-    * @Author peng
-    * @Date 2023/2/25
-    * @description: 自定义的测试类
-    */
    public interface DataService {
    
        /**
@@ -162,16 +167,11 @@ crpc框架
        String sendData(String msg);
    }
    ```
-
+   
 6. 实现接口，使用自定义注解`@EasyRpcService` 暴露一个服务接口
 
    ```java
-   /**
-    * @Author peng
-    * @Date 2023/3/11
-    * @description: 实现类
-    */
-   @EasyRpcService
+   @CRpcService
    public class DataServiceImpl implements DataService {
    
        @Override
@@ -181,32 +181,44 @@ crpc框架
        }
    }
    ```
-
+   
 7. 服务端配置
 
-   在服务端模块的`resource`文件夹下新建`rpc.properties`文件，并加入以下配置
+   在服务端模块的`resource`文件夹下新建`crpc.properties`文件，并加入以下配置
 
    ```properties
    #服务端对外暴露的端口
-   rpc.serverPort=8010
-   #项目名称
-   rpc.applicationName=rpc-provider
+   crpc.serverPort=9093
    #注册中心（zookeeper）的地址
-   rpc.registerAddr=127.0.0.1:2181
+   crpc.registerAddr=localhost:2181
+   #项目名称
+   crpc.applicationName=crpc-provider
+   #代理类型
+   crpc.proxyType=jdk
+   #路由策略（负载均衡）
+   crpc.routerStrategy=rotate
+   #序列化类型
+   crpc.serverSerialize=fastJson
    #注册中心类型
-   rpc.registerType=zookeeper
-   #序列化方式
-   rpc.serverSerialize=fastJson
+   crpc.registerType=zookeeper
+   #队列大小
+   crpc.server.queue.size=513
+   #线程数
+   crpc.server.biz.thread.nums=257
+   #最大连接数
+   crpc.server.max.connection=100
+   #数据包最大大小
+   crpc.server.max.data.size=4096
    ```
 
-8. 使用自定义注解 `@EasyRpcReference` 自动注入服务端暴露的接口服务
+8. 使用自定义注解 `@CRpcReference` 自动注入服务端暴露的接口服务
 
    ```java
    @RestController
    @RequestMapping(value = "/data")
    public class DataController {
    
-       @EasyRpcReference
+       @CRpcReference
        private DataService dataService;
    
        @GetMapping(value = "/send/{msg}")
@@ -222,7 +234,7 @@ crpc框架
 
    ```properties
    #项目名称
-   rpc.applicationName=rpc-consumer
+   rpc.applicationName=crpc-consumer
    #注册中心（zookeeper）的地址
    rpc.registerAddr=127.0.0.1:2181
    #注册中心类型
@@ -230,9 +242,11 @@ crpc框架
    #代理方式（jdk、javassist）
    rpc.proxyType=jdk
    #路由策略（负载均衡）
-   rpc.router=random
+   rpc.router=rotate
    #客户端序列化方式
    rpc.clientSerialize=fastJson
+   #数据包最大大小
+   crpc.server.max.data.size=4096
    ```
 
 10. 启动项目
@@ -258,3 +272,18 @@ crpc框架
 ​			Zookeeper官网连接地址：https://www.apache.org/dyn/closer.cgi/zookeeper/
 
 （2）在配置文件中正确配置 `zookeeper` 地址；
+
+**（3）windows部署zookeeper**
+
+Zookeeper官网连接地址：https://www.apache.org/dyn/closer.cgi/zookeeper/
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/22423603/1692599761592-f4db6e55-193e-4757-b64d-451ca25201d6.png)
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/22423603/1692599777628-3e8f32bb-7033-47c9-b466-0552c75e527e.png)
+
+我们发现zookeeper是闪退。解决这个问题，需要我们修改zkServer.cmd配置内容，用文本打开，在文件末尾添加pause即可，如下：
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/22423603/1692599820618-85cbca06-b061-4a9a-9b94-17a82d197464.png)
+
+
+
