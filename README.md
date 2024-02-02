@@ -148,17 +148,12 @@ crpc框架
    在项目中的`pom`引入刚刚安装的依赖（客户端、服务端都需要引入）
    ```xml
    <dependency>
-    	<groupId>com.cong</groupId>
-       <artifactId>crpc-spring-starter</artifactId>
-       <version>1.0-SNAPSHOT</version>
-   </dependency>
-   <dependency>
        <groupId>com.cong</groupId>
        <artifactId>crpc-core</artifactId>
        <version>1.0-SNAPSHOT</version>
    </dependency>
    ```
-
+   
 5. 定义服务接口
 
    ```java
@@ -238,6 +233,7 @@ crpc框架
    在客户端模块的`resource`文件夹下新建`rpc.properties`文件，并加入以下配置
 
    ```properties
+   crpc.serverPort=9093
    #项目名称
    rpc.applicationName=crpc-consumer
    #注册中心（zookeeper）的地址
