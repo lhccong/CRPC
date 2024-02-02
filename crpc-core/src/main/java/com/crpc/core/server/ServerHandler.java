@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.crpc.core.common.cache.CommonServerCache.SERVER_CHANNEL_DISPATCHER;
 
@@ -16,6 +17,7 @@ import static com.crpc.core.common.cache.CommonServerCache.SERVER_CHANNEL_DISPAT
  * @date 2023/08/08
  */
 @ChannelHandler.Sharable
+@Slf4j
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
 
@@ -28,6 +30,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         SERVER_CHANNEL_DISPATCHER.add(serverChannelReadData);
     }
 
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
@@ -35,5 +38,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         if (channel.isActive()) {
             ctx.close();
         }
+    }
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.error("this is channelInactive,ctx is {}",ctx);
+        super.channelInactive(ctx);
     }
 }
